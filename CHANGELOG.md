@@ -19,3 +19,5 @@
   - wiki workspace files can be uploaded to wiki.
   - asset files are uploaded with directory information 
   - The URL is added to the clipboard after the asset file is uploaded
+- 2021.10.10: 1.0.2 published
+  - search wiki will show directory info.

@@ -5,7 +5,7 @@ import FormData = require("form-data");
 import * as wsutils from "./wsutils";
 
 export async function queryWikiFileList(key: string) {
-  const queryG = gql`query{pages{search(query:"${key}"){results{id,title}}}}`;
+  const queryG = gql`query{pages{search(query:"${key}"){results{id,title,path}}}}`;
   console.log("wiki queryWikiFileList key:" + key + ",queryG:" + queryG);
   const data = await wsutils.graphQLClient.request(queryG);
   return data;

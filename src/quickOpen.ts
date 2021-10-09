@@ -25,8 +25,21 @@ export class FileItem implements QuickPickItem {
 	label: string;
 	description: string;
 
-	constructor(public base: Uri, public uri: Uri, public id: number) {
-		this.label = path.basename(uri.fsPath);
+	constructor(public base: Uri, public uri: Uri, public id: number, public wikiPath: string) {
+		const parentDirName = path.basename(path.dirname(wikiPath));
+		const pParentDirName = path.basename(path.dirname(wikiPath.replace(parentDirName, "")));
+		const ppParentDirName = path.basename(path.dirname(wikiPath.replace(parentDirName, "").replace(pParentDirName, "")));
+		let label = path.basename(uri.fsPath);
+		if(parentDirName != "" && parentDirName != ".") {
+			label = parentDirName + "/" + label;
+		}
+		if(parentDirName != "" && parentDirName != ".") {
+			label = pParentDirName + "/" + label;
+		}
+		if(parentDirName != "" && parentDirName != ".") {
+			label = ppParentDirName + "/" + label;
+		}
+		this.label = label;
 		this.description = path.dirname(path.relative(base.fsPath, uri.fsPath));
 	}
 }
@@ -58,13 +71,13 @@ async function pickFile() {
 					input.busy = true;
 					console.log("pickFile value:" + value);
 					queryWikiFileList(value).then((data: any) => {
-						console.log("pickFile queryWikiFileList result" + data);
 						const fileList: Array<FileItem> = [];
-						data.pages.search.results.forEach((element: { id: string; title: string; }) => {
+						data.pages.search.results.forEach((element: { id: string; title: string; path:string;}) => {
 							const baseFileUri = vscode.Uri.parse(`wiki:/`);
 							const fileUri = vscode.Uri.parse(`wiki:/${element.title}.md`);
-							fileList.push(new FileItem(baseFileUri, fileUri, Number(element.id)));
+							fileList.push(new FileItem(baseFileUri, fileUri, Number(element.id), element.path));
 						});
+						console.log("pickFile queryWikiFileList result" + data + ",length:" + fileList.length);
 						input.items = fileList;
 						input.busy = false;
 					}, (reason: any) => {
