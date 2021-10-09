@@ -14,7 +14,7 @@
   - change activationEvents to "*".
 - 2021.10.07: 0.9.9 published
   - README.md complete
-- 2021.10.09: 1.0.0 published
+- 2021.10.09: 1.0.0、1.0.1 published
   - empty md files can be uploaded to wiki.
   - wiki workspace files can be uploaded to wiki.
   - asset files are uploaded with directory information 

@@ -122,11 +122,11 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         const parentDirName = path.basename(path.dirname(uri.path));
-        getFolderIdFromName(parentDirName).then((folderId: number) => {
+        getFolderIdFromName(parentDirName.toLowerCase()).then((folderId: number) => {
             if (folderId == undefined) {
                 createAssetFolder(parentDirName).then((data:any)=>{
                     vscode.window.showInformationMessage("Directory Created successfully. name:" + parentDirName);
-                    getFolderIdFromName(parentDirName).then((folderId: number) => {
+                    getFolderIdFromName(parentDirName.toLowerCase()).then((folderId: number) => {
                         if(folderId == undefined) {
                             vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
                         } else {
