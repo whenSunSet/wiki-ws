@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "0.9.9",
+	"version": "1.0.0",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -68,19 +68,19 @@
 			"explorer/context": [
 				{
 					"command": "wiki.uploadFilesInDirToWiki",
-					"when": "resourceDirname != / && explorerResourceIsFolder"
+					"when": "resourceScheme != wiki && explorerResourceIsFolder"
 				},
 				{
 					"command": "wiki.uploadFileToWiki",
-					"when": "resourceExtname == .md && resourceDirname != /"
+					"when": "resourceExtname == .md"
 				},
 				{
 					"command": "wiki.deleteFileFromWiki",
-					"when": "resourceExtname == .md && resourceDirname == /"
+					"when": "resourceExtname == .md && resourceScheme == wiki"
 				},
 				{
 					"command": "wiki.uploadAssetToWiki",
-					"when": "resourceExtname != .md && resourceDirname != / && !explorerResourceIsFolder"
+					"when": "resourceExtname != .md && resourceScheme != wiki && !explorerResourceIsFolder"
 				}
 			],
 			"commandPalette": [

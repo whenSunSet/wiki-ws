@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
-import { MemFS } from "./fileSystemProvider";
+import { File, MemFS } from "./fileSystemProvider";
 import { quickOpen, FileItem } from "./quickOpen";
-import { queryWikiFromId, createWikiNewFile, deleteFileFromWiki, uploadAssetToWiki } from "./gql";
+import { queryWikiFromId, createWikiNewFile, deleteFileFromWiki, uploadAssetToWiki, createAssetFolder, getFolderIdFromName } from "./gql";
 import * as wsutils from "./wsutils";
 import { multiStepInput, State } from "./multiStepInput";
+import * as path from "path";
 
 export function activate(context: vscode.ExtensionContext) {
     console.log("wiki extension activate");
@@ -75,7 +76,7 @@ export function activate(context: vscode.ExtensionContext) {
         if (!checkConfigFile()) {
             return;
         }
-        uploadWikiNewFile(uri.path);
+        uploadWikiNewFile(uri, uri.path, memFs);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.uploadFilesInDirToWiki", uri => {
@@ -85,7 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
         wsutils.walkFileSync(uri.path, (filePath: string) => {
             console.log("wiki uploadFilesInDirToWiki walkFileSync rootDirPath:" + uri.path + ",filePath:" + filePath);
-            uploadWikiNewFile(filePath);
+            uploadWikiNewFile(uri, filePath, memFs);
         });
     }));
 
@@ -93,7 +94,7 @@ export function activate(context: vscode.ExtensionContext) {
         let file: any = undefined;
         try {
             file = memFs.lookupAsFile(uri, false);
-            if (file.id == undefined) {
+            if (file.id == -1) {
                 throw vscode.FileSystemError.FileIsADirectory(uri);
             }
         } catch (error) {
@@ -120,14 +121,45 @@ export function activate(context: vscode.ExtensionContext) {
         if (!checkConfigFile()) {
             return;
         }
-        uploadAssetToWiki(uri.path as string).then((value: any) => {
-            console.log("wiki uploadAssetToWiki success path:" + uri.path);
-            vscode.window.showInformationMessage("Uploading resources successfully:" + uri.path.split("/").pop());
+        const parentDirName = path.basename(path.dirname(uri.path));
+        getFolderIdFromName(parentDirName).then((folderId: number) => {
+            if (folderId == undefined) {
+                createAssetFolder(parentDirName).then((data:any)=>{
+                    vscode.window.showInformationMessage("Directory Created successfully. name:" + parentDirName);
+                    getFolderIdFromName(parentDirName).then((folderId: number) => {
+                        if(folderId == undefined) {
+                            vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
+                        } else {
+                            uploadAssetToWikiInner(uri.path, folderId, parentDirName);
+                        }
+                    }, (reason: any) => {
+                        console.error(reason);
+                        vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
+                    });
+                }, (reason: any) => {
+                    console.error(reason);
+                    vscode.window.showErrorMessage("Failed to create directory. name:" + parentDirName);
+                });
+            } else {
+                uploadAssetToWikiInner(uri.path, folderId, parentDirName);
+            }
         }, (reason: any) => {
             console.error(reason);
-            vscode.window.showErrorMessage("Failed to Delete a resource!");
+            vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
         });
     }));
+}
+
+function uploadAssetToWikiInner(path:string, folderId: number, parentDirName:string) {
+    uploadAssetToWiki(path as string, folderId).then((value: any) => {
+        console.log("wiki uploadAssetToWiki success path:" + path);
+        const assetUrl = wsutils.wikiUrl + "/" + parentDirName + "/" + path.split("/").pop()?.toLowerCase().replace(" ", "_"); 
+        vscode.window.showInformationMessage("Uploading resources successfully:" + path.split("/").pop() + ". Url added to your clipboard.");
+        vscode.env.clipboard.writeText(assetUrl);
+    }, (reason: any) => {
+        console.error(reason);
+        vscode.window.showErrorMessage("Failed to Delete a resource!");
+    });
 }
 
 function checkConfigFile(): boolean {
@@ -138,7 +170,8 @@ function checkConfigFile(): boolean {
     return exist;
 }
 
-function uploadWikiNewFile(path: string) {
+function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
+    const scheme = uri.scheme;
     const title = path.split("/").pop()?.split(".")[0];
     const endfix = "." + path.split("/").pop()?.split(".").pop();
     console.log("wiki uploadWikiNewFile path:" + path + ",title:" + title + ",endfix:" + endfix);
@@ -146,27 +179,51 @@ function uploadWikiNewFile(path: string) {
         console.log("Only MarkDown files can be uploaded!");
         return;
     }
-    wsutils.readFile(path).then((buffer) => {
-        let filePath = path as string;
-        vscode.workspace.workspaceFolders?.forEach(element => {
-            const workspaceRootPath = element.uri.path;
-            if (workspaceRootPath != "/" && filePath.includes(workspaceRootPath)) {
-                const rootName = workspaceRootPath.split("/").pop();
-                filePath = rootName + filePath.replace(workspaceRootPath, "");
+    if (scheme == "wiki") {
+        let file: any = undefined;
+        try {
+            file = memFs.lookupAsFile(uri, false);
+            if (file.id != -1) {
+                vscode.window.showErrorMessage("This file already exists in wiki! id is:" + file.id + ".");
             }
+        } catch (error) {
+            console.error(error);
+            vscode.window.showErrorMessage("This file cannot be found in wiki!");
+            return;
+        }
+        uploadWikiNewInner(title as string, path, endfix, (file as File).data?.toString() as string).then((value: any) => {
+            memFs.writeFile(uri, Buffer.from(value.pages.create.page.content as string), { create: false, overwrite: true, id: value.pages.create.page.id, isInit: false });
         });
+    } else {
+        wsutils.readFile(path).then((buffer) => {
+            let filePath = path as string;
+            vscode.workspace.workspaceFolders?.forEach(element => {
+                const workspaceRootPath = element.uri.path;
+                if (workspaceRootPath != "/" && filePath.includes(workspaceRootPath)) {
+                    const rootName = workspaceRootPath.split("/").pop();
+                    filePath = rootName + filePath.replace(workspaceRootPath, "");
+                }
+            });
 
-        let content = buffer.toString();
-        content = content.replace(/\n/g, "\\n");
-        filePath = filePath.replace(endfix, "");
-        createWikiNewFile(content, "", filePath, title as string).then((value: any) => {
-            vscode.window.showInformationMessage("Uploading file succeeded: " + path.split("/").pop());
+            uploadWikiNewInner(title as string, filePath, endfix, buffer.toString());
         }, (reason: any) => {
             console.error(reason);
-            vscode.window.showErrorMessage("Failed to upload files!");
+            vscode.window.showErrorMessage("Failed to read the file!");
         });
+    }
+}
+
+async function uploadWikiNewInner(title: string, filePath: string, endfix: string, content: string) {
+    content = content.replace(/\n/g, "\\n");
+    if (content == "") {
+        content = "#";
+    }
+    filePath = filePath.replace(endfix, "");
+    return createWikiNewFile(content, "", filePath, title as string).then((value: any) => {
+        vscode.window.showInformationMessage("Uploading file succeeded: " + filePath.split("/").pop());
+        return value;
     }, (reason: any) => {
         console.error(reason);
-        vscode.window.showErrorMessage("Failed to read the file!");
+        vscode.window.showErrorMessage("Failed to upload files!");
     });
 }

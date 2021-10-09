@@ -29,6 +29,7 @@ export let gqlUrl = "";
 export let imageUploadUrl = "";
 export let authorization = "";
 export let graphQLClient: any = undefined;
+export let wikiUrl = "";
 
 export function settingFileExist(): boolean {
 	return fs.existsSync(getSettingFilePath());
@@ -39,6 +40,7 @@ export function initSetting(){
 }
 
 export function initRequest(config:any) {
+	wikiUrl = config.base.wikiUrl;
 	gqlUrl = config.base.wikiUrl + "/graphql";
 	imageUploadUrl = config.base.wikiUrl + "/u";
 	authorization = "Bearer " + config.base.authorization_key;

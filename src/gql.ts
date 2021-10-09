@@ -33,6 +33,10 @@ export async function createWikiNewFile(content: string, description: string, pa
             responseResult{
               succeeded
             }
+            page{
+              id
+              content
+            }
           }
         }
       }`;
@@ -60,11 +64,11 @@ export async function deleteFileFromWiki(id: number) {
   return data;
 }
 
-export async function uploadAssetToWiki(filePath: string) {
-  console.log("wiki uploadImageToWiki filePath:" + filePath);
+export async function uploadAssetToWiki(filePath: string, folderId:number) {
+  console.log("wiki uploadImageToWiki filePath:" + filePath + ",folderId:" + folderId);
   const localFile = fs.createReadStream(filePath);
   const formData = new FormData();
-  formData.append("mediaUpload", "{\"folderId\":0}");
+  formData.append("mediaUpload", "{\"folderId\":" + folderId + "}");
   formData.append("mediaUpload", localFile);
 
   const headers = formData.getHeaders();//获取headers
@@ -83,4 +87,47 @@ export async function uploadAssetToWiki(filePath: string) {
       console.log(res.data);
     });
   });
+}
+
+export async function getFolderList() {
+  const queryG = gql`query{
+  assets{
+    folders(parentFolderId:0){
+      id,
+      name
+    }
+  }
+}`;
+
+  console.log("wiki getFolderList");
+  const data = await wsutils.graphQLClient.request(queryG);
+  return data;
+}
+
+export async function getFolderIdFromName(localFolderName: string) {
+  return getFolderList().then((data: any) => {
+    let folderId: any = undefined;
+    data.assets.folders.forEach((element: { id: number; name: string; }) => {
+      if (localFolderName == element.name) {
+        folderId = element.id;
+      }
+    });
+    return folderId;
+  });
+}
+
+export async function createAssetFolder(name: string) {
+  const queryG = gql`mutation{
+    assets{
+      createFolder(parentFolderId:0, slug:"${name}", name:"${name}") {
+        responseResult{
+          succeeded
+        }
+      }
+    }
+  }`;
+
+  console.log("wiki createAssetFolder name" + name);
+  const data = await wsutils.graphQLClient.request(queryG);
+  return data;
 }
