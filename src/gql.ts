@@ -19,6 +19,7 @@ export async function queryWikiFromId(id: number) {
 }
 
 export async function changeWikiContent(id: number, content: string) {
+  content = wsutils.escapeRegExp(content);
   const queryG = gql`mutation{pages{update(id:${id},content:"${content}",tags:[""],isPublished:true){responseResult{errorCode,succeeded,slug,message}}}}`;
   console.log("wiki changeWikiContent id:" + id);
   const data = await wsutils.graphQLClient.request(queryG);
@@ -26,6 +27,7 @@ export async function changeWikiContent(id: number, content: string) {
 }
 
 export async function createWikiNewFile(content: string, description: string, path: string, title: string) {
+  content = wsutils.escapeRegExp(content);
   const queryG = gql`mutation{
         pages{
           create(

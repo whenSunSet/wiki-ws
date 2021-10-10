@@ -161,3 +161,19 @@ export function getWebViewContent(context: vscode.ExtensionContext, templatePath
 	});
 	return html;
 }
+
+const reRegExpChar = /"/g;
+const reHasRegExpChar = RegExp(reRegExpChar.source);
+/**
+ * Escapes the `RegExp` special characters "\", """, "'",
+ * "(", ")", "[", "]", "{", "}", and "|" in `string`.
+ *
+ * @param {string} [string=''] The string to escape.
+ * @returns {string} Returns the escaped string.
+ *
+ */
+export function escapeRegExp(string:string) {
+  return (string && reHasRegExpChar.test(string))
+    ? string.replace(reRegExpChar, '\\$&')
+    : (string || '');
+}
