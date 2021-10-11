@@ -3,6 +3,7 @@ import axios from "axios";
 import * as fs from "fs";
 import FormData = require("form-data");
 import * as wsutils from "./wsutils";
+import * as vscode from "vscode";
 
 export async function queryWikiFileList(key: string) {
   const queryG = gql`query{pages{search(query:"${key}"){results{id,title,path}}}}`;
@@ -33,7 +34,10 @@ export async function createWikiNewFile(content: string, description: string, pa
           create(
             content:"${content}",description:"${description}",editor:"markdown",isPublished:true,isPrivate:false,locale:"zh",path:"${path}",tags:[""],title:"${title}"){
             responseResult{
-              succeeded
+              succeeded,
+              message,
+              errorCode,
+              slug
             }
             page{
               id
@@ -66,7 +70,7 @@ export async function deleteFileFromWiki(id: number) {
   return data;
 }
 
-export async function uploadAssetToWiki(filePath: string, folderId:number) {
+export async function uploadAssetToWiki(filePath: string, folderId: number, parentDirName: string) {
   console.log("wiki uploadImageToWiki filePath:" + filePath + ",folderId:" + folderId);
   const localFile = fs.createReadStream(filePath);
   const formData = new FormData();
@@ -82,13 +86,24 @@ export async function uploadAssetToWiki(filePath: string, folderId:number) {
     //设置长度，important!!!
     headers["content-length"] = length;
     headers["Authorization"] = wsutils.authorization;
-
-    await axios.post(wsutils.imageUploadUrl, formData, { headers }).then(res => {
-      console.log("上传成功", res.data);
-    }).catch(res => {
-      console.log(res.data);
+    axios({
+      method: 'post',
+      url: wsutils.imageUploadUrl,
+      data: formData,
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+      headers: headers
+    }).then((value: any) => {
+        console.log("wiki uploadAssetToWiki success path:" + filePath);
+        const assetUrl = wsutils.wikiUrl + "/" + parentDirName + "/" + filePath.split("/").pop()?.toLowerCase().replace(" ", "_");
+        vscode.window.showInformationMessage("Uploading resources successfully:" + filePath.split("/").pop() + ". Url added to your clipboard.");
+        vscode.env.clipboard.writeText(assetUrl);
+    }, (reason: any) => {
+        console.error(reason);
+        vscode.window.showErrorMessage("Failed to upload a resource! " + reason.message);
     });
   });
+  // return axios.post(wsutils.imageUploadUrl, formData, { headers });
 }
 
 export async function getFolderList() {
@@ -123,7 +138,10 @@ export async function createAssetFolder(name: string) {
     assets{
       createFolder(parentFolderId:0, slug:"${name}", name:"${name}") {
         responseResult{
-          succeeded
+          succeeded,
+          errorCode,
+          slug,
+          message
         }
       }
     }

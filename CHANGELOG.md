@@ -23,3 +23,6 @@
   - search wiki will show directorzy info.
 - 2021.10.11: 1.0.3 published
   - Fix the problem of md file uploading failure caused by entering double quotation marks.
+- 2021.10.12: 1.0.4 published
+  - Fix upload failure caused by too large resource file.
+  - Show the reasons for the failure of various operations.

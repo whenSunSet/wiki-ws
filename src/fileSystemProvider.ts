@@ -247,6 +247,10 @@ export class MemFS implements vscode.FileSystemProvider {
         }
         content = content.replace(/\n/g, "\\n");
         changeWikiContent(file.id, content).then((value:any)=>{
+            const responseResult = value.pages.update.responseResult; 
+            if(!responseResult.succeeded) {
+                vscode.window.showErrorMessage("Change wiki content error! " + responseResult.message);
+            }
             console.log("MemFS.changeWikiContent update success uri:" + uri);
         }, (reason:any)=>{
             console.log(reason);

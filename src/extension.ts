@@ -108,8 +108,12 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         deleteFileFromWiki(file.id).then((value: any) => {
-            console.log("wiki deleteFileFromWiki success file:" + file + ",path:" + uri.path);
-            vscode.window.showInformationMessage("File Deleted Successfully:" + file.name);
+            const responseResult = value.pages.delete.responseResult;
+            if (!responseResult.succeeded) {
+                vscode.window.showInformationMessage("File delete error! " + responseResult.message);
+            } else {
+                vscode.window.showInformationMessage("File deleted successfully:" + file.name);
+            }
             memFs.delete(uri);
         }, (reason: any) => {
             console.error(reason);
@@ -125,18 +129,23 @@ export function activate(context: vscode.ExtensionContext) {
         const parentDirName = path.basename(path.dirname(uri.path));
         getFolderIdFromName(parentDirName.toLowerCase()).then((folderId: number) => {
             if (folderId == undefined) {
-                createAssetFolder(parentDirName).then((data:any)=>{
-                    vscode.window.showInformationMessage("Directory Created successfully. name:" + parentDirName);
-                    getFolderIdFromName(parentDirName.toLowerCase()).then((folderId: number) => {
-                        if(folderId == undefined) {
+                createAssetFolder(parentDirName).then((value: any) => {
+                    const responseResult = value.asset.createFolder.responseResult;
+                    if (!responseResult.succeeded) {
+                        vscode.window.showInformationMessage("Directory create error! " + responseResult.message);
+                    } else {
+                        vscode.window.showInformationMessage("Directory created successfully. name:" + parentDirName);
+                        getFolderIdFromName(parentDirName.toLowerCase()).then((folderId: number) => {
+                            if (folderId == undefined) {
+                                vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
+                            } else {
+                                uploadAssetToWikiInner(uri.path, folderId, parentDirName);
+                            }
+                        }, (reason: any) => {
+                            console.error(reason);
                             vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
-                        } else {
-                            uploadAssetToWikiInner(uri.path, folderId, parentDirName);
-                        }
-                    }, (reason: any) => {
-                        console.error(reason);
-                        vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
-                    });
+                        });
+                    }
                 }, (reason: any) => {
                     console.error(reason);
                     vscode.window.showErrorMessage("Failed to create directory. name:" + parentDirName);
@@ -151,16 +160,8 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 }
 
-function uploadAssetToWikiInner(path:string, folderId: number, parentDirName:string) {
-    uploadAssetToWiki(path as string, folderId).then((value: any) => {
-        console.log("wiki uploadAssetToWiki success path:" + path);
-        const assetUrl = wsutils.wikiUrl + "/" + parentDirName + "/" + path.split("/").pop()?.toLowerCase().replace(" ", "_"); 
-        vscode.window.showInformationMessage("Uploading resources successfully:" + path.split("/").pop() + ". Url added to your clipboard.");
-        vscode.env.clipboard.writeText(assetUrl);
-    }, (reason: any) => {
-        console.error(reason);
-        vscode.window.showErrorMessage("Failed to Delete a resource!");
-    });
+function uploadAssetToWikiInner(path: string, folderId: number, parentDirName: string) {
+    uploadAssetToWiki(path as string, folderId, parentDirName)
 }
 
 function checkConfigFile(): boolean {
@@ -221,7 +222,12 @@ async function uploadWikiNewInner(title: string, filePath: string, endfix: strin
     }
     filePath = filePath.replace(endfix, "");
     return createWikiNewFile(content, "", filePath, title as string).then((value: any) => {
-        vscode.window.showInformationMessage("Uploading file succeeded: " + filePath.split("/").pop());
+        const responseResult = value.pages.create.responseResult;
+        if (!responseResult.succeeded) {
+            vscode.window.showErrorMessage("Upload file error! " + responseResult.message);
+        } else {
+            vscode.window.showInformationMessage("Upload file succeeded: " + filePath.split("/").pop());
+        }
         return value;
     }, (reason: any) => {
         console.error(reason);
