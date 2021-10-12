@@ -127,31 +127,32 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         const parentDirName = path.basename(path.dirname(uri.path));
-        getFolderIdFromName(parentDirName.toLowerCase()).then((folderId: number) => {
+        const parentDirNameRemote = parentDirName.replace(/ /g, "_").toLowerCase().trim(); 
+        getFolderIdFromName(parentDirNameRemote).then((folderId: number) => {
             if (folderId == undefined) {
-                createAssetFolder(parentDirName).then((value: any) => {
-                    const responseResult = value.asset.createFolder.responseResult;
+                createAssetFolder(parentDirNameRemote).then((value: any) => {
+                    const responseResult = value.assets.createFolder.responseResult;
                     if (!responseResult.succeeded) {
                         vscode.window.showInformationMessage("Directory create error! " + responseResult.message);
                     } else {
-                        vscode.window.showInformationMessage("Directory created successfully. name:" + parentDirName);
-                        getFolderIdFromName(parentDirName.toLowerCase()).then((folderId: number) => {
+                        vscode.window.showInformationMessage("Directory created successfully. name:" + parentDirNameRemote);
+                        getFolderIdFromName(parentDirNameRemote.toLowerCase()).then((folderId: number) => {
                             if (folderId == undefined) {
-                                vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
+                                vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirNameRemote);
                             } else {
-                                uploadAssetToWikiInner(uri.path, folderId, parentDirName);
+                                uploadAssetToWikiInner(uri.path, folderId, parentDirNameRemote);
                             }
                         }, (reason: any) => {
                             console.error(reason);
-                            vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
+                            vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirNameRemote);
                         });
                     }
                 }, (reason: any) => {
                     console.error(reason);
-                    vscode.window.showErrorMessage("Failed to create directory. name:" + parentDirName);
+                    vscode.window.showErrorMessage("Failed to create directory. name:" + parentDirNameRemote);
                 });
             } else {
-                uploadAssetToWikiInner(uri.path, folderId, parentDirName);
+                uploadAssetToWikiInner(uri.path, folderId, parentDirNameRemote);
             }
         }, (reason: any) => {
             console.error(reason);

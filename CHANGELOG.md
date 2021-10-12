@@ -26,3 +26,6 @@
 - 2021.10.12: 1.0.4 published
   - Fix upload failure caused by too large resource file.
   - Show the reasons for the failure of various operations.
+- 2021.10.13: 1.0.5 published
+  - Fix asset folder name invalid.
+  - notify when asset folder create succeed.

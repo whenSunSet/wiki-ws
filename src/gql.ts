@@ -95,7 +95,7 @@ export async function uploadAssetToWiki(filePath: string, folderId: number, pare
       headers: headers
     }).then((value: any) => {
         console.log("wiki uploadAssetToWiki success path:" + filePath);
-        const assetUrl = wsutils.wikiUrl + "/" + parentDirName + "/" + filePath.split("/").pop()?.toLowerCase().replace(" ", "_");
+        const assetUrl = wsutils.wikiUrl + "/" + parentDirName.toLowerCase() + "/" + filePath.split("/").pop()?.toLowerCase().replace(" ", "_");
         vscode.window.showInformationMessage("Uploading resources successfully:" + filePath.split("/").pop() + ". Url added to your clipboard.");
         vscode.env.clipboard.writeText(assetUrl);
     }, (reason: any) => {
