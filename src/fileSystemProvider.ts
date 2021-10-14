@@ -147,9 +147,17 @@ export class MemFS implements vscode.FileSystemProvider {
     }
 
     createDirectory(uri: vscode.Uri): void {
+        if(this.directoryExist(uri)) {
+            console.log("MemFS.createDirectory dir exist uri:" + uri);
+            return
+        }
         console.log("MemFS.createDirectory uri:" + uri);
         const basename = path.posix.basename(uri.path);
         const dirname = uri.with({ path: path.posix.dirname(uri.path) });
+        if(!this.parentDirectoryExist(uri)) {
+            this.createDirectory(dirname);
+        }
+
         const parent = this._lookupAsDirectory(dirname, false);
 
         const entry = new Directory(basename);
@@ -157,6 +165,11 @@ export class MemFS implements vscode.FileSystemProvider {
         parent.mtime = Date.now();
         parent.size += 1;
         this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { type: vscode.FileChangeType.Created, uri });
+    }
+
+    private parentDirectoryExist(uri: vscode.Uri):boolean {
+        const dirname = uri.with({ path: path.posix.dirname(uri.path) });
+        return this.directoryExist(dirname);
     }
 
     // --- lookup
@@ -192,6 +205,15 @@ export class MemFS implements vscode.FileSystemProvider {
             return entry;
         }
         throw vscode.FileSystemError.FileNotADirectory(uri);
+    }
+
+    directoryExist(uri: vscode.Uri): boolean {
+        const entry = this._lookup(uri, true);
+        if (entry instanceof Directory) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     lookupAsFile(uri: vscode.Uri, silent: boolean): File {
@@ -236,8 +258,8 @@ export class MemFS implements vscode.FileSystemProvider {
     private changeWikiContent(uri: vscode.Uri) {
         const file = this.lookupAsFile(uri, false);
         console.log("MemFS.changeWikiContent uri:" + uri + ",file:" + file);
-        if (file.id == undefined) {
-            vscode.window.showErrorMessage("This file does not exist in the wiki, error!");
+        if (file.id == undefined || file.id == -1) {
+            console.log("MemFS.changeWikiContent file not in remote");
             return;
         }
         let content = file.data?.toString();

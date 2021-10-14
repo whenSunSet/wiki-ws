@@ -29,3 +29,5 @@
 - 2021.10.13: 1.0.5 published
   - Fix asset folder name invalid.
   - notify when asset folder create succeed.
+- 2021.10.14: 1.0.6 published
+  - The corresponding directory is automatically created when the MD file is downloaded.

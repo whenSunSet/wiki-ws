@@ -55,6 +55,8 @@ export function activate(context: vscode.ExtensionContext) {
                     content = content.substring(1, content.length - 1);
                     content = content.replace(/\\n/g, "\n");
                     content = content.replace(/\\"/g, `"`);
+                    const parentDir = path.posix.dirname(fileItem.wikiPath);
+                    memFs.createDirectory(vscode.Uri.parse(`wiki:/${parentDir}`));
                     memFs.writeFile(fileItem.uri, Buffer.from(content), { create: true, overwrite: true, id: fileItem.id, isInit: true });
                     console.log("wiki searchInWiki queryWikiFromId data:" + data + ",fileItem:" + fileItem);
                     vscode.workspace.openTextDocument(fileItem.uri).then((document: vscode.TextDocument) => {

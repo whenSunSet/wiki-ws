@@ -25,7 +25,7 @@ export class FileItem implements QuickPickItem {
 	label: string;
 	description: string;
 
-	constructor(public base: Uri, public uri: Uri, public id: number, public wikiPath: string) {
+	constructor(public base: Uri, public uri: Uri, public id: number, public wikiPath: string, public fileName: string) {
 		const parentDirName = path.basename(path.dirname(wikiPath));
 		const pParentDirName = path.basename(path.dirname(wikiPath.replace(parentDirName, "")));
 		const ppParentDirName = path.basename(path.dirname(wikiPath.replace(parentDirName, "").replace(pParentDirName, "")));
@@ -74,8 +74,8 @@ async function pickFile() {
 						const fileList: Array<FileItem> = [];
 						data.pages.search.results.forEach((element: { id: string; title: string; path:string;}) => {
 							const baseFileUri = vscode.Uri.parse(`wiki:/`);
-							const fileUri = vscode.Uri.parse(`wiki:/${element.title}.md`);
-							fileList.push(new FileItem(baseFileUri, fileUri, Number(element.id), element.path));
+							const fileUri = vscode.Uri.parse(`wiki:/${element.path}.md`);
+							fileList.push(new FileItem(baseFileUri, fileUri, Number(element.id), element.path, element.title + ".md"));
 						});
 						console.log("pickFile queryWikiFileList result" + data + ",length:" + fileList.length);
 						input.items = fileList;
