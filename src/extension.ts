@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { File, MemFS } from "./fileSystemProvider";
-import { quickOpen, FileItem } from "./quickOpen";
+import { quickOpen, FileItem, queryWikiFileListInner } from "./quickOpen";
 import { queryWikiFromId, createWikiNewFile, deleteFileFromWiki, uploadAssetToWiki, createAssetFolder, getFolderIdFromName } from "./gql";
 import * as wsutils from "./wsutils";
 import { multiStepInput, State } from "./multiStepInput";
@@ -50,27 +50,23 @@ export function activate(context: vscode.ExtensionContext) {
         quickOpen().then((fileItem: FileItem | undefined) => {
             if (fileItem) {
                 console.log("wiki searchInWiki open file:" + fileItem);
-                queryWikiFromId(fileItem.id).then((data: any) => {
-                    let content = JSON.stringify(data.pages.single.content, undefined, 2);
-                    content = content.substring(1, content.length - 1);
-                    content = content.replace(/\\n/g, "\n");
-                    content = content.replace(/\\"/g, `"`);
-                    const parentDir = path.posix.dirname(fileItem.wikiPath);
-                    memFs.createDirectory(vscode.Uri.parse(`wiki:/${parentDir}`));
-                    memFs.writeFile(fileItem.uri, Buffer.from(content), { create: true, overwrite: true, id: fileItem.id, isInit: true });
-                    console.log("wiki searchInWiki queryWikiFromId data:" + data + ",fileItem:" + fileItem);
-                    vscode.workspace.openTextDocument(fileItem.uri).then((document: vscode.TextDocument) => {
-                        console.log("wiki searchInWiki queryWikiFromId openTextDocument document:" + document);
-                        vscode.window.showTextDocument(document);
-                    });
-                }, (reason) => {
-                    console.error(reason);
-                    vscode.window.showErrorMessage("Query wiki from id error!");
-                });
+                queryWikiFromIdInner(fileItem, memFs);
             }
         }, (reason) => {
             console.error(reason);
             vscode.window.showErrorMessage("Wiki search error!");
+        });
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.fetchAllFileFromWikiInDir", dirUri => {
+        console.log("wiki fetchAllFileFromWikiInDir");
+        if (!checkConfigFile()) {
+            return;
+        }
+        queryWikiFileListInner(dirUri.path.replace("/", ""), (fileList:Array<FileItem>)=>{
+            fileList.forEach((element:FileItem)=>{
+                queryWikiFromIdInner(element, memFs);
+            });
         });
     }));
 
@@ -94,33 +90,17 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteFileFromWiki", (uri) => {
-        let file: any = undefined;
-        try {
-            file = memFs.lookupAsFile(uri, false);
-            if (file.id == -1) {
-                throw vscode.FileSystemError.FileIsADirectory(uri);
-            }
-        } catch (error) {
-            console.error(error);
-            vscode.window.showErrorMessage("This file cannot be found in wiki!");
-            return;
-        }
-        console.log("wiki deleteFileFromWiki file:" + file.valueOf() + ",path:" + uri.path);
-        if (!checkConfigFile()) {
-            return;
-        }
-        deleteFileFromWiki(file.id).then((value: any) => {
-            const responseResult = value.pages.delete.responseResult;
-            if (!responseResult.succeeded) {
-                vscode.window.showInformationMessage("File delete error! " + responseResult.message);
-            } else {
-                vscode.window.showInformationMessage("File deleted successfully:" + file.name);
-            }
-            memFs.delete(uri);
-        }, (reason: any) => {
-            console.error(reason);
-            vscode.window.showErrorMessage("Failed to delete a file!");
+        deleteFileFromWikiInner(memFs, uri);
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteDirFileFromWiki", (dirUri) => {
+        console.log("wiki deleteDirFileFromWiki path:" + dirUri.path);
+        memFs.fileWalk(dirUri, (filePath: string) => {
+            console.log("wiki deleteDirFileFromWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
+            const deleteFileUri = vscode.Uri.parse(`wiki:${filePath}`);
+            deleteFileFromWikiInner(memFs, deleteFileUri);
         });
+        memFs.delete(dirUri);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.uploadAssetToWiki", (uri) => {
@@ -129,7 +109,7 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         const parentDirName = path.basename(path.dirname(uri.path));
-        const parentDirNameRemote = parentDirName.replace(/ /g, "_").toLowerCase().trim(); 
+        const parentDirNameRemote = parentDirName.replace(/ /g, "_").toLowerCase().trim();
         getFolderIdFromName(parentDirNameRemote).then((folderId: number) => {
             if (folderId == undefined) {
                 createAssetFolder(parentDirNameRemote).then((value: any) => {
@@ -164,7 +144,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function uploadAssetToWikiInner(path: string, folderId: number, parentDirName: string) {
-    uploadAssetToWiki(path as string, folderId, parentDirName)
+    uploadAssetToWiki(path as string, folderId, parentDirName);
 }
 
 function checkConfigFile(): boolean {
@@ -173,6 +153,56 @@ function checkConfigFile(): boolean {
         vscode.window.showErrorMessage("The configuration file is not initialized! Please call the command:wiInitWiki!");
     }
     return exist;
+}
+
+function queryWikiFromIdInner(fileItem: FileItem, memFs:MemFS) {
+    queryWikiFromId(fileItem.id).then((data: any) => {
+        let content = JSON.stringify(data.pages.single.content, undefined, 2);
+        content = content.substring(1, content.length - 1);
+        content = content.replace(/\\n/g, "\n");
+        content = content.replace(/\\"/g, `"`);
+        const parentDir = path.posix.dirname(fileItem.wikiPath);
+        memFs.createDirectory(vscode.Uri.parse(`wiki:/${parentDir}`));
+        memFs.writeFile(fileItem.uri, Buffer.from(content), { create: true, overwrite: true, id: fileItem.id, isInit: true });
+        console.log("wiki searchInWiki queryWikiFromId data:" + data + ",fileItem:" + fileItem);
+        vscode.workspace.openTextDocument(fileItem.uri).then((document: vscode.TextDocument) => {
+            console.log("wiki searchInWiki queryWikiFromId openTextDocument document:" + document);
+            vscode.window.showTextDocument(document);
+        });
+    }, (reason) => {
+        console.error(reason);
+        vscode.window.showErrorMessage("Query wiki from id error!");
+    });
+}
+
+function deleteFileFromWikiInner(memFs: MemFS, uri: vscode.Uri) {
+    let file: any = undefined;
+    try {
+        file = memFs.lookupAsFile(uri, false);
+        if (file.id == -1) {
+            throw vscode.FileSystemError.FileIsADirectory(uri);
+        }
+    } catch (error) {
+        console.error(error);
+        vscode.window.showErrorMessage("This file cannot be found in wiki!");
+        return;
+    }
+    console.log("wiki deleteFileFromWiki file:" + file.valueOf() + ",path:" + uri.path);
+    if (!checkConfigFile()) {
+        return;
+    }
+    deleteFileFromWiki(file.id).then((value: any) => {
+        const responseResult = value.pages.delete.responseResult;
+        if (!responseResult.succeeded) {
+            vscode.window.showInformationMessage("File delete error! " + responseResult.message);
+        } else {
+            vscode.window.showInformationMessage("File deleted successfully:" + file.name);
+        }
+        memFs.delete(uri);
+    }, (reason: any) => {
+        console.error(reason);
+        vscode.window.showErrorMessage("Failed to delete a file!");
+    });
 }
 
 function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {

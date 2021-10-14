@@ -70,19 +70,9 @@ async function pickFile() {
 					}
 					input.busy = true;
 					console.log("pickFile value:" + value);
-					queryWikiFileList(value).then((data: any) => {
-						const fileList: Array<FileItem> = [];
-						data.pages.search.results.forEach((element: { id: string; title: string; path:string;}) => {
-							const baseFileUri = vscode.Uri.parse(`wiki:/`);
-							const fileUri = vscode.Uri.parse(`wiki:/${element.path}.md`);
-							fileList.push(new FileItem(baseFileUri, fileUri, Number(element.id), element.path, element.title + ".md"));
-						});
-						console.log("pickFile queryWikiFileList result" + data + ",length:" + fileList.length);
+					queryWikiFileListInner(value, (fileList:Array<FileItem>)=>{
 						input.items = fileList;
 						input.busy = false;
-					}, (reason: any) => {
-						console.error(reason);
-						vscode.window.showErrorMessage("wiki search error! network error!");
 					});
 				}),
 				input.onDidChangeSelection(items => {
@@ -104,4 +94,21 @@ async function pickFile() {
 	} finally {
 		disposables.forEach(d => d.dispose());
 	}
+}
+
+export function queryWikiFileListInner(key:string, callback: (fileList: Array<FileItem>)=>any) {
+	console.log("queryWikiFileListInner:" + key);
+	queryWikiFileList(key).then((data: any) => {
+		const fileList: Array<FileItem> = [];
+		data.pages.search.results.forEach((element: { id: string; title: string; path:string;}) => {
+			const baseFileUri = vscode.Uri.parse(`wiki:/`);
+			const fileUri = vscode.Uri.parse(`wiki:/${element.path}.md`);
+			fileList.push(new FileItem(baseFileUri, fileUri, Number(element.id), element.path, element.title + ".md"));
+		});
+		console.log("queryWikiFileListInner queryWikiFileList result" + data + ",length:" + fileList.length);
+		callback(fileList);
+	}, (reason: any) => {
+		console.error(reason);
+		vscode.window.showErrorMessage("wiki search error! network error!");
+	});
 }

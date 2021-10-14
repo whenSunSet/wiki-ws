@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -23,7 +23,8 @@
 		"onCommand:wiki.uploadFileToWiki",
 		"onCommand:wiki.initWiki",
 		"onCommand:wiki.resetWiki",
-		"onCommand:wiki.searchInWiki"
+		"onCommand:wiki.searchInWiki",
+		"onCommand:wiki.deleteDirFileFromWiki"
 	],
 	"main": "./out/src/extension",
 	"contributes": {
@@ -36,6 +37,11 @@
 			{
 				"command": "wiki.deleteFileFromWiki",
 				"title": "wiDeleteFileFromWiki(从Wiki删除该文件)",
+				"category": "wiki"
+			},
+			{
+				"command": "wiki.deleteDirFileFromWiki",
+				"title": "wiDeleteDirFileFromWiki(从Wiki删除该目录下的所有MD文件)",
 				"category": "wiki"
 			},
 			{
@@ -62,6 +68,11 @@
 				"command": "wiki.searchInWiki",
 				"title": "wiSearchInWiki(搜索Wiki中的文件)",
 				"category": "wiki"
+			},
+			{
+				"command": "wiki.fetchAllFileFromWikiInDir",
+				"title": "wiFetchAllFileFromWikiInDir(从Wiki中加载当前目录下的所有文件)",
+				"category": "wiki"
 			}
 		],
 		"menus": {
@@ -77,6 +88,14 @@
 				{
 					"command": "wiki.deleteFileFromWiki",
 					"when": "resourceExtname == .md && resourceScheme == wiki"
+				},
+				{
+					"command": "wiki.deleteDirFileFromWiki",
+					"when": "explorerResourceIsFolder && resourceScheme == wiki"
+				},
+				{
+					"command": "wiki.fetchAllFileFromWikiInDir",
+					"when": "explorerResourceIsFolder && resourceScheme == wiki"
 				},
 				{
 					"command": "wiki.uploadAssetToWiki",

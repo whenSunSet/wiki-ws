@@ -66,6 +66,19 @@ export class MemFS implements vscode.FileSystemProvider {
         return result;
     }
 
+    fileWalk(uri: vscode.Uri, callback: (path: string)=>any) {
+        if(!this.directoryExist(uri)) {
+            return;
+        }
+        for (const [name, type] of this.readDirectory(uri)) {
+            if(type == vscode.FileType.Directory) {
+                this.fileWalk(vscode.Uri.parse(`wiki:${uri.path + "/" + name}`), callback)
+            } else if(type == vscode.FileType.File){
+                callback(`${uri.path + "/" + name}`);
+            }
+        }
+    }
+
     // --- manage file contents
 
     readFile(uri: vscode.Uri): Uint8Array {
