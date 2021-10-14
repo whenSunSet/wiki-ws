@@ -66,14 +66,14 @@ export class MemFS implements vscode.FileSystemProvider {
         return result;
     }
 
-    fileWalk(uri: vscode.Uri, callback: (path: string)=>any) {
-        if(!this.directoryExist(uri)) {
+    fileWalk(uri: vscode.Uri, callback: (path: string) => any) {
+        if (!this.directoryExist(uri)) {
             return;
         }
         for (const [name, type] of this.readDirectory(uri)) {
-            if(type == vscode.FileType.Directory) {
+            if (type == vscode.FileType.Directory) {
                 this.fileWalk(vscode.Uri.parse(`wiki:${uri.path + "/" + name}`), callback)
-            } else if(type == vscode.FileType.File){
+            } else if (type == vscode.FileType.File) {
                 callback(`${uri.path + "/" + name}`);
             }
         }
@@ -117,7 +117,11 @@ export class MemFS implements vscode.FileSystemProvider {
         }
         this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
         if (options.isInit != true) {
-            this.changeWikiContent(uri)
+            Debounced.use(()=>{
+
+                this.changeWikiContent(uri);
+
+            })()
         }
     }
 
@@ -160,14 +164,14 @@ export class MemFS implements vscode.FileSystemProvider {
     }
 
     createDirectory(uri: vscode.Uri): void {
-        if(this.directoryExist(uri)) {
+        if (this.directoryExist(uri)) {
             console.log("MemFS.createDirectory dir exist uri:" + uri);
             return
         }
         console.log("MemFS.createDirectory uri:" + uri);
         const basename = path.posix.basename(uri.path);
         const dirname = uri.with({ path: path.posix.dirname(uri.path) });
-        if(!this.parentDirectoryExist(uri)) {
+        if (!this.parentDirectoryExist(uri)) {
             this.createDirectory(dirname);
         }
 
@@ -180,7 +184,7 @@ export class MemFS implements vscode.FileSystemProvider {
         this._fireSoon({ type: vscode.FileChangeType.Changed, uri: dirname }, { type: vscode.FileChangeType.Created, uri });
     }
 
-    private parentDirectoryExist(uri: vscode.Uri):boolean {
+    private parentDirectoryExist(uri: vscode.Uri): boolean {
         const dirname = uri.with({ path: path.posix.dirname(uri.path) });
         return this.directoryExist(dirname);
     }
@@ -276,20 +280,46 @@ export class MemFS implements vscode.FileSystemProvider {
             return;
         }
         let content = file.data?.toString();
-        if(content == undefined) {
+        if (content == undefined) {
             vscode.window.showErrorMessage("This file content is undefine, error!");
             return;
         }
         content = content.replace(/\n/g, "\\n");
-        changeWikiContent(file.id, content).then((value:any)=>{
-            const responseResult = value.pages.update.responseResult; 
-            if(!responseResult.succeeded) {
+        changeWikiContent(file.id, content).then((value: any) => {
+            const responseResult = value.pages.update.responseResult;
+            if (!responseResult.succeeded) {
                 vscode.window.showErrorMessage("Change wiki content error! " + responseResult.message);
             }
             console.log("MemFS.changeWikiContent update success uri:" + uri);
-        }, (reason:any)=>{
+        }, (reason: any) => {
             console.log(reason);
             vscode.window.showErrorMessage("Failed to update wiki content, error!");
         })
+    }
+}
+
+export class Debounced {
+
+    /**
+     * 
+     * @param fn 要执行的函数
+     * @param awit  时间
+     * @param immediate 是否在触发事件后 在时间段n开始，立即执行，否则是时间段n结束，才执行
+     */
+    static use(fn: Function, awit: number = 2000, immediate: boolean = false) {
+        let timer: NodeJS.Timeout | null
+        return (...args: any) => {
+            if (timer) clearInterval(timer)
+            if (immediate) {
+                if (!timer) fn(args[0]);
+                timer = setTimeout(function () {//n 秒内 多次触发事件,重新计算.timeer 
+                    timer = null;//n 秒内没有触发事件 timeer 设置为null，保证了n 秒后能重新触发事件 flag = true = !timmer  
+                }, awit)
+            } else {
+                timer = setTimeout(() => { 
+                    fn(args[0])
+                }, awit)
+            }
+        }
     }
 }
