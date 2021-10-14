@@ -31,3 +31,6 @@
   - notify when asset folder create succeed.
 - 2021.10.14: 1.0.6 published
   - The corresponding directory is automatically created when the MD file is downloaded.
+- 2021.10.14: 1.0.7、1.0.8 published
+  - You can delete MD files in batches.
+  - Files can be fetch in batches from wikis.

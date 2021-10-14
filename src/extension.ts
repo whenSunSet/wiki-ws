@@ -63,8 +63,8 @@ export function activate(context: vscode.ExtensionContext) {
         if (!checkConfigFile()) {
             return;
         }
-        queryWikiFileListInner(dirUri.path.replace("/", ""), (fileList:Array<FileItem>)=>{
-            fileList.forEach((element:FileItem)=>{
+        queryWikiFileListInner(dirUri.path.replace("/", ""), (fileList: Array<FileItem>) => {
+            fileList.forEach((element: FileItem) => {
                 queryWikiFromIdInner(element, memFs);
             });
         });
@@ -95,12 +95,18 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteDirFileFromWiki", (dirUri) => {
         console.log("wiki deleteDirFileFromWiki path:" + dirUri.path);
-        memFs.fileWalk(dirUri, (filePath: string) => {
-            console.log("wiki deleteDirFileFromWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
-            const deleteFileUri = vscode.Uri.parse(`wiki:${filePath}`);
-            deleteFileFromWikiInner(memFs, deleteFileUri);
+        vscode.window.showInputBox({ placeHolder: "print yes or no(输入yes或者no)", prompt: "Confirm deletion(确认删除吗)?" }).then((value: string | undefined) => {
+            console.log("wiki deleteDirFileFromWiki print:" + value);
+            if(value?.toLowerCase() != "yes") {
+                return;
+            }
+            memFs.fileWalk(dirUri, (filePath: string) => {
+                console.log("wiki deleteDirFileFromWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
+                const deleteFileUri = vscode.Uri.parse(`wiki:${filePath}`);
+                deleteFileFromWikiInner(memFs, deleteFileUri);
+            });
+            memFs.delete(dirUri);
         });
-        memFs.delete(dirUri);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.uploadAssetToWiki", (uri) => {
@@ -155,7 +161,7 @@ function checkConfigFile(): boolean {
     return exist;
 }
 
-function queryWikiFromIdInner(fileItem: FileItem, memFs:MemFS) {
+function queryWikiFromIdInner(fileItem: FileItem, memFs: MemFS) {
     queryWikiFromId(fileItem.id).then((data: any) => {
         let content = JSON.stringify(data.pages.single.content, undefined, 2);
         content = content.substring(1, content.length - 1);
