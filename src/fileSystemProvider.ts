@@ -118,9 +118,7 @@ export class MemFS implements vscode.FileSystemProvider {
         this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
         if (options.isInit != true) {
             Debounced.use(()=>{
-
                 this.changeWikiContent(uri);
-
             })()
         }
     }

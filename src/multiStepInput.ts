@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { QuickPickItem, window, Disposable, QuickInputButton, QuickInput, ExtensionContext, QuickInputButtons } from 'vscode';
+import * as wsutils from "./wsutils";
 
 /**
  * A multi-step input using window.createQuickPick() and window.createInputBox().
@@ -13,37 +14,65 @@ import { QuickPickItem, window, Disposable, QuickInputButton, QuickInput, Extens
 export interface State {
 	wikiUrl: string;
 	authorizationKey: string;
+	wikiIsDeployed: string;
+	savedDirPathIfNotDeploy: string;
 }
 export async function multiStepInput() {
 
 	async function collectInputs() {
 		const state = {} as Partial<State>;
-		await MultiStepInput.run(input => inputWikiUrl(input, state));
+		await MultiStepInput.run(input => chooseInitWay(input, state));
 		return state as State;
 	}
 
-	const title = 'Init Wiki.ws Extension.(初始化 Wiki.ws 插件)';
+	const title = 'Init Wiki.ws Extension(初始化Wiki.ws插件)';
 
-	async function inputWikiUrl(input: MultiStepInput, state: Partial<State>) {
-		state.wikiUrl = await input.showInputBox({
+	async function chooseInitWay(input: MultiStepInput, state: Partial<State>) {
+		state.wikiIsDeployed = await input.showInputBox({
 			title,
 			step: 1,
-			totalSteps: 2,
-			value: typeof state.wikiUrl === 'string' ? state.wikiUrl : '',
-			prompt: 'Input Wiki.js home page url.(输入 Wiki.js 主页的 url)',
+			totalSteps: 3,
+			value: typeof state.wikiIsDeployed === 'string' ? state.wikiIsDeployed : '',
+			prompt: 'Have you deployed Wiki.js? Enter yes or no(您是否已经部署了Wiki.js？请输入 yes 或者 no)',
 			validate: validateNameIsUnique,
 			shouldResume: shouldResume
 		});
-		return (input: MultiStepInput) => inputAuthorizationKey(input, state);
+		return (input: MultiStepInput) => chooseInputBox(input, state);
+	}
+
+	async function chooseInputBox(input: MultiStepInput, state: Partial<State>) {
+		if (state.wikiIsDeployed?.toLowerCase() == wsutils.yes) {
+			state.wikiUrl = await input.showInputBox({
+				title,
+				step: 2,
+				totalSteps: 3,
+				value: typeof state.wikiUrl === 'string' ? state.wikiUrl : '',
+				prompt: 'Please enter the link to the Wiki.js homepage(请输入Wiki.js主页的链接)',
+				validate: validateNameIsUnique,
+				shouldResume: shouldResume
+			});
+			return (input: MultiStepInput) => inputAuthorizationKey(input, state);
+		} else {
+			const defaultDir = wsutils.mkdirSettingDir();
+			state.savedDirPathIfNotDeploy = await input.showInputBox({
+				title,
+				step: 2,
+				totalSteps: 2,
+				value: typeof state.savedDirPathIfNotDeploy === 'string' ? state.savedDirPathIfNotDeploy : '',
+				prompt: 'Please enter the directory where you expect to deploy Wiki.js, the default directory is:' + defaultDir + '(请输入您期望部署Wiki.js的目录,默认目录是:' + defaultDir + ')',
+				validate: validateNameIsUnique,
+				shouldResume: shouldResume
+			});
+		}
 	}
 
 	async function inputAuthorizationKey(input: MultiStepInput, state: Partial<State>) {
 		state.authorizationKey = await input.showInputBox({
 			title,
-			step: 2,
-			totalSteps:2,
+			step: 3,
+			totalSteps: 3,
 			value: state.authorizationKey || '',
-			prompt: 'Please input authorization key.(You can find the authorization key from this page(你可以从这个页面找到 authorization key):https://docs.requarks.io/dev/api)',
+			prompt: 'Please input authorization key,you can find the authorization key in this page:https://docs.requarks.io/dev/api(请输入Wiki.js的密钥,你可以从这个页面找到:https://docs.requarks.io/dev/api)',
 			validate: validateNameIsUnique,
 			shouldResume: shouldResume
 		});

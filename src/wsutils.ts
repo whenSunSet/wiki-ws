@@ -6,21 +6,65 @@ import * as fs from 'fs';
 import * as path from "path";
 import * as os from "os";
 import * as ini from "ini";
-import { GraphQLClient, gql } from "graphql-request";
+import * as child_process from "child_process"
+import axios from "axios";
+import { GraphQLClient } from "graphql-request";
+import * as StreamZip from "node-stream-zip"
+import { Readable } from 'form-data';
+
+export const CACHE_DIR = os.homedir() + "/.Wiki-WS";
+export const DEFAULT_WIKI_MAIN_URL = "http://localhost:3344";
+export const DEFAULT_WIKI_AUTHORIZATION = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGkiOjEsImdycCI6MSwiaWF0IjoxNjM0Mjc4OTEwLCJleHAiOjE2NjU4MzY1MTAsImF1ZCI6InVybjp3aWtpLmpzIiwiaXNzIjoidXJuOndpa2kuanMifQ.Al1rfg-mtQBsWGqdSaMkCFvUDDQOrMUbZlDSRQOLHv97UYu2Fur3-4fEbv32IyMiQUKGK38tYwc5S6a7jyaZNt0DXU43QGYAsGBRfGdTdxWRXd7hcuOQ7WTTzSvI1E3oLpdTmC7rHPJ3b0Jpiqp8FqJVJsqmiMvOcCXKDCmFll3dt0sduqAEeQk9DTgH7epO_XO3FEUXled56SbDZJKlcTMDI_w-tANq5dvT7QIjdyMMS0Kfh_sSN3mlYKwxyUUwFJevzjkJcrgbJUBdqN6j90MDNNR8FWF9NK_fC1Fxsgybc4uzrpSaNsfbcp0H48GhZrKIYJ3F4bCuVmKsbGw03g";
+export const WIKI_DATA_ZIP_URL = "http://101.42.99.194:5555/wiki-data.zip";
+export const WIKI_DATA_ZIP_NAME = "wiki-data.zip";
+export const WIKI_DATA_DIR_NAME = "wiki-data";
+export const yes = "yes";
+export const WIKI_DOCKER = "heshixi-wiki-js-default-deploy";
+export const WIKI_DB_DOCKER = "heshixi-wiki-js-db-default-deploy";
+export const WIKI_DOCKER_IMAGE = "requarks/wiki:2";
+export const WIKI_POSTGRES_IMAGE = "postgres:11-alpine";
+
+export function buildImportantInfo(useInputDir:string): string {
+	return "Please record the following information in case of need. In addition, the password and authentication key need to be modified as soon as possible\n"
+		+ "(请将下面的信息记录下来以备不时之需。此外密码和认证密钥需要尽快进行修改。\n\n"
+		+ "You can visit Wiki.js in browser(您可以在浏览器中通过这个网址访问Wiki.js): " + DEFAULT_WIKI_MAIN_URL + "\n\n"
+		+ "You Account name is(您的账号是): heshixi-test@gmail.com\n\n"
+		+ "You password is(您的密码是): heshixi-test\n\n"
+		+ "You authorization key is(您的认证密钥是): " + DEFAULT_WIKI_AUTHORIZATION + "\n\n"
+		+ "Your wiki.js data exists in this directory:" + useInputDir + ". Please take good care of it, otherwise there will be a risk of file loss\n"
+		+ "您的Wiki.js数据存在于这个目录下:" + useInputDir + "，请一定保管好它，否则将会存在文件丢失的风险。\n\n"
+		+ "You can manage the blog of wiki.js through this extension(您可以通过这个插件来管理Wiki.js的博客)\n\n"
+		+ "It should be noted that all files in the wiki directory of vscode only exist in memory, so please upload them to wiki.js through the extension as soon as possible after creating the files to avoid file loss\n"
+		+ "需要注意的是：vscode的wiki目录下所有的文件都是只存在于内存中，所以在创建了文件之后请尽快通过插件上传到 Wiki.js 中，避免文件的丢失。\n\n"
+		+ "At present, the extension only supports uploading blog files with .md suffix. Other file types will be uploaded as resource files\n"
+		+ "目前插件只支持上传.md后缀的博客文件，其他文件类型将会被当做资源文件上传\n\n"
+		+ "I wish you a pleasant use. Please email me if you have any questions a1018998632@gmail.com\n"
+		+ "祝您使用愉快，有任何问题请邮件咨询: a1018998632@gmail.com";
+}
+
+export const IMPORTANT_INFO_EASY =
+	"You can manage the blog of wiki.js through this extension(您可以通过这个插件来管理Wiki.js的博客)\n\n"
+	+ "It should be noted that all files in the wiki directory of vscode only exist in memory, so please upload them to wiki.js through the extension as soon as possible after creating the files to avoid file loss\n"
+	+ "需要注意的是：vscode的wiki目录下所有的文件都是只存在于内存中，所以在创建了文件之后请尽快通过插件上传到 Wiki.js 中，避免文件的丢失。\n\n"
+	+ "At present, the extension only supports uploading blog files with .md suffix. Other file types will be uploaded as resource files\n"
+	+ "目前插件只支持上传.md后缀的博客文件，其他文件类型将会被当做资源文件上传\n\n"
+	+ "I wish you a pleasant use. Please email me if you have any questions a1018998632@gmail.com\n"
+	+ "祝您使用愉快，有任何问题请邮件咨询: a1018998632@gmail.com"
+
 
 export function mkdirSettingDir(): string {
-	const settingPath = os.homedir() + "/.Wiki-WS";
-	if (!fs.existsSync(settingPath)) {
-		fs.mkdirSync(settingPath);
+	const settingPathDir = CACHE_DIR;
+	if (!fs.existsSync(settingPathDir)) {
+		fs.mkdirSync(settingPathDir);
 	}
-	return settingPath;
+	return settingPathDir;
 }
 
-function getSettingFileName():string {
-	return "setting.ini"; 
+function getSettingFileName(): string {
+	return "setting.ini";
 }
 
-export function getSettingFilePath():string {
+export function getSettingFilePath(): string {
 	const filePath = mkdirSettingDir() + "/" + getSettingFileName();
 	return filePath;
 }
@@ -35,11 +79,11 @@ export function settingFileExist(): boolean {
 	return fs.existsSync(getSettingFilePath());
 }
 
-export function initSetting(){
+export function initSetting() {
 	initRequest(ini.parse(fs.readFileSync(getSettingFilePath(), 'utf-8')));
 }
 
-export function initRequest(config:any) {
+export function initRequest(config: any) {
 	wikiUrl = config.base.wikiUrl;
 	gqlUrl = config.base.wikiUrl + "/graphql";
 	imageUploadUrl = config.base.wikiUrl + "/u";
@@ -172,8 +216,132 @@ const reHasRegExpChar = RegExp(reRegExpChar.source);
  * @returns {string} Returns the escaped string.
  *
  */
-export function escapeRegExp(string:string) {
-  return (string && reHasRegExpChar.test(string))
-    ? string.replace(reRegExpChar, '\\$&')
-    : (string || '');
+export function escapeRegExp(string: string) {
+	return (string && reHasRegExpChar.test(string))
+		? string.replace(reRegExpChar, '\\$&')
+		: (string || '');
+}
+
+export function prepareWikiInitData(inputDirPath: string, downloadSuccess: (downloadZipPath: string) => void, unzipSuccess: (downloadDataDirPath: string) => void, error: (reason: any) => void) {
+	const wikiDataZipPath = inputDirPath + "/" + WIKI_DATA_ZIP_NAME;
+	const wikiDataDirPath = inputDirPath + "/" + WIKI_DATA_DIR_NAME;
+	console.log("prepareWikiInitData inputDirPath:" + inputDirPath + ",wikiDataZipPath:" + wikiDataZipPath + ",wikiDataDirPath:" + wikiDataDirPath);
+	downloadAndUnzipUrl(inputDirPath, WIKI_DATA_ZIP_URL, wikiDataZipPath, wikiDataDirPath, downloadSuccess, unzipSuccess, error);
+}
+
+export function deleteWikiInitDataDir(inputDirPath: string) {
+	console.log("deleteWikiInitDataDir inputDirPath:" + inputDirPath);
+	const wikiDataDirPath = inputDirPath + "/" + WIKI_DATA_DIR_NAME;
+	fs.rmdirSync(wikiDataDirPath, { recursive: true });
+}
+
+export function deleteWikiInitDataZip(inputDirPath: string) {
+	console.log("deleteWikiInitDataZip inputDirPath:" + inputDirPath);
+	const wikiDataZipPath = inputDirPath + "/" + WIKI_DATA_ZIP_NAME;
+	fs.unlinkSync(wikiDataZipPath);
+}
+
+function downloadAndUnzipUrl(downloadZipDirPath: string, downloadZipUrl: string, downloadZipPath: string, downloadDataDirPath: string,
+	downloadSuccess: (downloadZipPath: string) => void, unzipSuccess: (downloadDataDirPath: string) => void, error: (reason: any) => void) {
+	console.log("downloadAndUnzipUrl downloadZipDirPath:" + downloadZipDirPath + ",downloadZipUrl:" + downloadZipUrl +
+		",downloadZipPath:" + downloadZipPath + ",downloadDataDirPath:" + downloadDataDirPath);
+	if (fs.existsSync(downloadDataDirPath)) {
+		console.log("downloadAndUnzipUrl downloadDataDirPath exist!");
+		downloadSuccess(downloadZipPath);
+		unzipSuccess(downloadDataDirPath);
+	} else {
+		if (fs.existsSync(downloadZipPath)) {
+			console.log("downloadAndUnzipUrl downloadZipPath exist!");
+			const zip = new StreamZip.async({ file: downloadZipPath });
+			fs.mkdirSync(downloadDataDirPath);
+			zip.extract(null, downloadDataDirPath).then((value) => {
+				zip.close().then((value) => {
+					console.log("downloadAndUnzipUrl downloadZipPath exist unzip success!");
+					unzipSuccess(downloadDataDirPath);
+				}, (reason: any) => {
+					error(reason);
+				})
+			}, (reason: any) => {
+				error(true);
+			});
+		} else {
+			console.log("downloadAndUnzipUrl nothing exist!");
+			downloadFile(downloadZipUrl, downloadZipDirPath, downloadZipPath.split("/").pop() as string).then((value: any) => {
+				const zip = new StreamZip.async({ file: downloadZipPath });
+				fs.mkdirSync(downloadDataDirPath);
+				console.log("downloadAndUnzipUrl nothing exist! Download success!");
+				downloadSuccess(downloadZipPath);
+				zip.extract(null, downloadDataDirPath).then((value) => {
+					zip.close().then((value) => {
+						console.log("downloadAndUnzipUrl nothing exist! unzip success!");
+						unzipSuccess(downloadDataDirPath);
+					}, (reason: any) => {
+						error(reason);
+					})
+				}, (reason: any) => {
+					error(true);
+				});
+			}, (reason: any) => {
+				error(reason);
+			})
+		}
+	}
+
+}
+
+export function wikiDockerRun(initDataDirPath: string, callback: (error: any, stdout: string, stderr: string) => void) {
+	child_process.exec("cd " + initDataDirPath + " && " + "docker-compose up -d", callback)
+}
+
+export function fetchPostsqlDocker(callback: (error: any, stdout: string, stderr: string, isFinished: boolean) => void) {
+	run(["pull", WIKI_POSTGRES_IMAGE], callback);
+}
+
+export function fetchWikiDocker(callback: (error: any, stdout: string, stderr: string, isFinished: boolean) => void) {
+	run(["pull", WIKI_DOCKER_IMAGE], callback);
+}
+
+function run(arg: Array<string>, callback: (error: any, stdout: string, stderr: string, isFinished: boolean) => void) {
+	const run = child_process.spawn('docker', arg, {})
+	run.stdout.on("data", (data) => {
+		callback("", data.toString(), "", false);
+	});
+
+	run.stderr.on("data", (data) => {
+		callback("", "", data.toString(), false);
+	});
+
+	run.on('exit', (code) => {
+		callback("", "", "", true);
+	});
+}
+
+export function clearWikiDocker(callback: (error: any, stdout: string, stderr: string) => void) {
+	console.log("clearWikiDocker");
+	try {
+		child_process.exec("docker stop " + WIKI_DOCKER + " && " + "docker rm " + WIKI_DOCKER + " && " + "docker stop " + WIKI_DB_DOCKER + " && " + "docker rm " + WIKI_DB_DOCKER, callback)
+	} catch (error) {
+		console.log(error)
+	}
+}
+
+// url 是图片地址，如，http://wximg.233.com/attached/image/20160815/20160815162505_0878.png
+// filepath 是文件下载的本地目录
+// name 是下载后的文件名
+async function downloadFile(url: string, filepath: string, name: string) {
+	if (!fs.existsSync(filepath)) {
+		fs.mkdirSync(filepath);
+	}
+	const mypath = path.resolve(filepath, name);
+	const writer = fs.createWriteStream(mypath);
+	const response = await axios({
+		url,
+		method: "GET",
+		responseType: "stream",
+	});
+	(response.data as Readable).pipe(writer)
+	// response.data.pipe(writer);
+	return new Promise((resolve, reject) => {
+		writer.on("finish", resolve);
+	});
 }

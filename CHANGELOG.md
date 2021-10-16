@@ -34,5 +34,7 @@
 - 2021.10.14: 1.0.7、1.0.8 published
   - You can delete MD files in batches.
   - Files can be fetch in batches from wikis.
-- 2021.10.14: 1.0.7、1.0.9 published
+- 2021.10.15: 1.0.7、1.0.9 published
   - Change content will debounce 2000ms.
+- 2021.10.17: 1.0.95 published
+  - Help users automatically deploy wiki.js
