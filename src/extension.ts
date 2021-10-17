@@ -261,7 +261,7 @@ export function activate(context: vscode.ExtensionContext) {
         });
     }));
 
-    
+
 }
 
 function initWikiCreateLocal(mainUrl: string, authorization: string) {
@@ -339,7 +339,19 @@ function deleteFileFromWikiInner(memFs: MemFS, uri: vscode.Uri) {
 
 function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
     const scheme = uri.scheme;
-    const title = path.split("/").pop()?.split(".")[0];
+    const title = path.split("/").pop()?.replace(".md", "");
+    if (title?.indexOf(".") != -1) {
+        vscode.window.showErrorMessage("File name could not contain '.'(文件名不能包含'.'等异常字符)");
+        return
+    }
+    if (title?.indexOf("_") != -1) {
+        vscode.window.showErrorMessage("File name could not contain '_'(文件名不能包含下划线等异常字符)");
+        return
+    }
+    if (title?.indexOf(" ") != -1) {
+        vscode.window.showErrorMessage("File name could not contain space(文件名不能包含空格等异常字符)");
+        return
+    }
     const endfix = "." + path.split("/").pop()?.split(".").pop();
     console.log("wiki uploadWikiNewFile path:" + path + ",title:" + title + ",endfix:" + endfix);
     if (endfix != ".md") {

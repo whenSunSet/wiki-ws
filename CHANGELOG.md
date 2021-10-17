@@ -41,3 +41,5 @@
 - 2021.10.17: 1.0.96 published
   - You can upload files in the wiki directory in batches
   - If the MD file in the wiki directory does not exist in wiki.js, you will be prompted to upload it in the lower right corner
+- 2021.10.17: 1.0.97 published
+  - Fix some bug
