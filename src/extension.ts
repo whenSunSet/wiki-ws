@@ -16,8 +16,36 @@ export function activate(context: vscode.ExtensionContext) {
     const memFs = new MemFS();
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider("wiki", memFs, { isCaseSensitive: true }));
 
-    let myStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    context.subscriptions.push(myStatusBarItem);
+    let fileStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
+    fileStatusBar.command = "wiki.uploadFileToWiki";
+    context.subscriptions.push(fileStatusBar);
+    context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => {
+        let editor = vscode.window.activeTextEditor;
+        const uri = editor?.document.uri;
+        if (uri == undefined || uri.scheme != "wiki" || !(uri.path as string).endsWith(".md")) {
+            fileStatusBar.hide();
+            return
+        } else {
+            fileStatusBar.show()
+        }
+        let file: any = undefined;
+        try {
+            file = memFs.lookupAsFile(uri, false);
+        } catch (error) {
+            console.error(error);
+            vscode.window.showErrorMessage("This file cannot be found in wiki!");
+            return;
+        }
+        if (file.id != -1 && file.id != undefined) {
+            fileStatusBar.hide()
+        } else {
+            fileStatusBar.show()
+            fileStatusBar.text = "<<不存在于(Not exists in)Wik.js, 点击上传(Click to upload)>>";
+        }
+    }))
+
+    let initWikiStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    context.subscriptions.push(initWikiStatusBarItem);
     context.subscriptions.push(vscode.commands.registerCommand("wiki.initWiki", _ => {
         console.log("wiki initWiki");
         if (!wsutils.settingFileExist()) {
@@ -42,23 +70,23 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                     vscode.window.showInformationMessage("Wiki.js 的部署将在后台进行，具体进度可以看右下角的状态栏(Wiki.js will be deployed in the background. See the status bar in the lower right corner for the specific progress)");
                     vscode.window.showInformationMessage("部署Wiki.js预计需要几分钟到十几分钟，请勿关闭vscode(It is estimated that deploying wiki.js will take several to more than ten minutes. Do not close vscode)");
-                    myStatusBarItem.show()
-                    myStatusBarItem.text = "Wiki data downloading(Wiki数据下载中)......";
+                    initWikiStatusBarItem.show()
+                    initWikiStatusBarItem.text = "Wiki data downloading(Wiki数据下载中)1/5......";
                     wsutils.prepareWikiInitData(inputDirPath, (downloadZipPath: string) => {
-                        myStatusBarItem.text = "Wiki data downloaded, unzipping(Wiki数据下载完毕, Wiki数据解压中)......";
+                        initWikiStatusBarItem.text = "Wiki data downloaded, unzipping(Wiki数据下载完毕, Wiki数据解压中)2/5......";
                     }, (downloadDataDirPath: string) => {
-                        myStatusBarItem.text = "Wiki data unzipped, old wiki docker clearing(Wiki数据解压完毕, 老Wiki程序清理中)......";
+                        initWikiStatusBarItem.text = "Wiki data unzipped, old wiki docker clearing(Wiki数据解压完毕, 老Wiki程序清理中)3/5......";
                         wsutils.clearWikiDocker((error, stdout, stderr) => {
-                            myStatusBarItem.text = "Old wiki docker cleared(老Wiki程序清理完毕)......";
+                            initWikiStatusBarItem.text = "Old wiki docker cleared(老Wiki程序清理完毕)3/5......";
                             wsutils.fetchWikiDocker((error, stdout, stderr, isFinished: boolean) => {
                                 console.log(stdout + stderr)
-                                myStatusBarItem.text = "Wiki docker image one fetching(Wiki镜像一获取中, 预计需要几分钟到十几分钟)......";
+                                initWikiStatusBarItem.text = "Wiki docker image one fetching(Wiki镜像一获取中, 预计需要几分钟到十几分钟)4/5......";
                                 if (isFinished) {
-                                    myStatusBarItem.text = "Wiki docker image one fetched(Wiki镜像一获取完毕)......";
+                                    initWikiStatusBarItem.text = "Wiki docker image one fetched(Wiki镜像一获取完毕)4/5......";
                                     wsutils.fetchPostsqlDocker((error, stdout, stderr, isFinished: boolean) => {
-                                        myStatusBarItem.text = "Wiki docker image two fetching(Wiki镜像二获取中, 预计需要几分钟到十几分钟)......";
+                                        initWikiStatusBarItem.text = "Wiki docker image two fetching(Wiki镜像二获取中, 预计需要几分钟到十几分钟)5/5......";
                                         if (isFinished) {
-                                            myStatusBarItem.text = "Wiki docker image two fetched(Wiki镜像二获取完毕)......";
+                                            initWikiStatusBarItem.text = "Wiki docker image two fetched(Wiki镜像二获取完毕)5/5......";
                                             console.log(stdout + stderr)
                                             wsutils.wikiDockerRun(downloadDataDirPath, (error, stdout, stderr) => {
                                                 if (error != null && stderr != "") {
@@ -138,22 +166,40 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.uploadFileToWiki", (uri) => {
-        console.log("wiki uploadFileToWiki path:" + uri.path);
+        let fileUri = uri;
+        if (fileUri == undefined) {
+            let editor = vscode.window.activeTextEditor;
+            fileUri = editor?.document.uri;
+            if (fileUri == undefined || fileUri.scheme != "wiki") {
+                return
+            }
+            fileStatusBar.hide();
+        }
+        console.log("wiki uploadFileToWiki path:" + fileUri.path);
         if (!checkConfigFile()) {
             return;
         }
-        uploadWikiNewFile(uri, uri.path, memFs);
+        uploadWikiNewFile(fileUri, fileUri.path, memFs);
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand("wiki.uploadFilesInDirToWiki", uri => {
-        console.log("wiki uploadFilesInDirToWiki path:" + uri.path);
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.uploadFilesInDirToWiki", dirUri => {
+        console.log("wiki uploadFilesInDirToWiki path:" + dirUri.path);
         if (!checkConfigFile()) {
             return;
         }
-        wsutils.walkFileSync(uri.path, (filePath: string) => {
-            console.log("wiki uploadFilesInDirToWiki walkFileSync rootDirPath:" + uri.path + ",filePath:" + filePath);
-            uploadWikiNewFile(uri, filePath, memFs);
-        });
+        if (dirUri.scheme == "wiki") {
+            memFs.fileWalk(dirUri, (filePath: string) => {
+                const uploadFileUri = vscode.Uri.parse(`wiki:${filePath}`);
+                console.log("wiki uploadFilesInDirToWiki fileWalk rootDirPath:" + dirUri.path + ",filePath:" + filePath);
+                uploadWikiNewFile(uploadFileUri, filePath, memFs);
+            });
+
+        } else {
+            wsutils.walkFileSync(dirUri.path, (filePath: string) => {
+                console.log("wiki uploadFilesInDirToWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
+                uploadWikiNewFile(dirUri, filePath, memFs);
+            });
+        }
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteFileFromWiki", (uri) => {
@@ -214,6 +260,8 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
         });
     }));
+
+    
 }
 
 function initWikiCreateLocal(mainUrl: string, authorization: string) {

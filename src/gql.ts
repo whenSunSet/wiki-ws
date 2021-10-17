@@ -19,9 +19,9 @@ export async function queryWikiFromId(id: number) {
   return data;
 }
 
-export async function changeWikiContent(id: number, content: string) {
+export async function changeWikiContent(id: number, content: string, title:string) {
   content = wsutils.escapeRegExp(content);
-  const queryG = gql`mutation{pages{update(id:${id},content:"${content}",tags:[""],isPublished:true){responseResult{errorCode,succeeded,slug,message}}}}`;
+  const queryG = gql`mutation{pages{update(id:${id},content:"${content}",tags:["${title}"],isPublished:true){responseResult{errorCode,succeeded,slug,message}}}}`;
   console.log("wiki changeWikiContent id:" + id);
   const data = await wsutils.graphQLClient.request(queryG);
   return data;
@@ -32,7 +32,7 @@ export async function createWikiNewFile(content: string, description: string, pa
   const queryG = gql`mutation{
         pages{
           create(
-            content:"${content}",description:"${description}",editor:"markdown",isPublished:true,isPrivate:false,locale:"zh",path:"${path}",tags:[""],title:"${title}"){
+            content:"${content}",description:"${description}",editor:"markdown",isPublished:true,isPrivate:false,locale:"zh",path:"${path}",tags:["${title}"],title:"${title}"){
             responseResult{
               succeeded,
               message,

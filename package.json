@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.0.95",
+	"version": "1.0.96",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -73,13 +73,24 @@
 				"command": "wiki.fetchAllFileFromWikiInDir",
 				"title": "wiFetchAllFileFromWikiInDir(从Wiki中加载当前目录下的所有文件)",
 				"category": "wiki"
+			},
+			{
+				"command": "wiki.fileStatus",
+				"title": "wiFileStatus(当前文件的状态)",
+				"category": "wiki"
 			}
 		],
 		"menus": {
+			"editor/title": [
+				{
+					"command": "wiki.fileStatus",
+					"when": "resourceScheme == wiki"
+				}
+			],
 			"explorer/context": [
 				{
 					"command": "wiki.uploadFilesInDirToWiki",
-					"when": "resourceScheme != wiki && explorerResourceIsFolder"
+					"when": "explorerResourceIsFolder"
 				},
 				{
 					"command": "wiki.uploadFileToWiki",

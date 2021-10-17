@@ -282,8 +282,9 @@ export class MemFS implements vscode.FileSystemProvider {
             vscode.window.showErrorMessage("This file content is undefine, error!");
             return;
         }
+        const title = file.name.replace(".md", "");
         content = content.replace(/\n/g, "\\n");
-        changeWikiContent(file.id, content).then((value: any) => {
+        changeWikiContent(file.id, content, title).then((value: any) => {
             const responseResult = value.pages.update.responseResult;
             if (!responseResult.succeeded) {
                 vscode.window.showErrorMessage("Change wiki content error! " + responseResult.message);
