@@ -117,7 +117,7 @@ export class MemFS implements vscode.FileSystemProvider {
         }
         this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
         if (options.isInit != true) {
-            Debounced.use(()=>{
+            Debounced.use(() => {
                 this.changeWikiContent(uri);
             })()
         }
@@ -283,6 +283,7 @@ export class MemFS implements vscode.FileSystemProvider {
             return;
         }
         const title = file.name.replace(".md", "");
+        content = content.replace(/\\/g, `\\\\`);
         content = content.replace(/\n/g, "\\n");
         changeWikiContent(file.id, content, title).then((value: any) => {
             const responseResult = value.pages.update.responseResult;
@@ -315,7 +316,7 @@ export class Debounced {
                     timer = null;//n 秒内没有触发事件 timeer 设置为null，保证了n 秒后能重新触发事件 flag = true = !timmer  
                 }, awit)
             } else {
-                timer = setTimeout(() => { 
+                timer = setTimeout(() => {
                     fn(args[0])
                 }, awit)
             }

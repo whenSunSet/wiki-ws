@@ -290,6 +290,7 @@ function queryWikiFromIdInner(fileItem: FileItem, memFs: MemFS) {
         content = content.substring(1, content.length - 1);
         content = content.replace(/\\n/g, "\n");
         content = content.replace(/\\"/g, `"`);
+        content = content.replace(/\\\\/g, `\\`);
         let parentDir = path.posix.dirname(fileItem.wikiPath);
         if (parentDir == "." || parentDir == undefined) {
             parentDir = ""
@@ -393,6 +394,7 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
 }
 
 async function uploadWikiNewInner(title: string, filePath: string, endfix: string, content: string) {
+    content = content.replace(/\\/g, `\\\\`);
     content = content.replace(/\n/g, "\\n");
     if (content == "") {
         content = "#";

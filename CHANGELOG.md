@@ -43,3 +43,5 @@
   - If the MD file in the wiki directory does not exist in wiki.js, you will be prompted to upload it in the lower right corner
 - 2021.10.17: 1.0.97 published
   - Fix some bug
+- 2021.10.17: 1.0.98 published
+  - Fix some bug
