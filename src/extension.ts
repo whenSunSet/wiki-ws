@@ -16,35 +16,35 @@ export function activate(context: vscode.ExtensionContext) {
     const memFs = new MemFS();
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider("wiki", memFs, { isCaseSensitive: true }));
 
-    let fileStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
+    const fileStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
     fileStatusBar.command = "wiki.uploadFileToWiki";
     context.subscriptions.push(fileStatusBar);
     context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => {
-        let editor = vscode.window.activeTextEditor;
+        const editor = vscode.window.activeTextEditor;
         const uri = editor?.document.uri;
         if (uri == undefined || uri.scheme != "wiki" || !(uri.path as string).endsWith(".md")) {
             fileStatusBar.hide();
-            return
+            return;
         } else {
-            fileStatusBar.show()
+            fileStatusBar.show();
         }
         let file: any = undefined;
         try {
             file = memFs.lookupAsFile(uri, false);
         } catch (error) {
             console.error(error);
-            vscode.window.showErrorMessage("This file cannot be found in wiki!");
+            vscode.window.showErrorMessage("Wiki中找不到这个文件(This file cannot be found in wiki!)");
             return;
         }
         if (file.id != -1 && file.id != undefined) {
-            fileStatusBar.hide()
+            fileStatusBar.hide();
         } else {
-            fileStatusBar.show()
+            fileStatusBar.show();
             fileStatusBar.text = "<<不存在于(Not exists in)Wik.js, 点击上传(Click to upload)>>";
         }
-    }))
+    }));
 
-    let initWikiStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    const initWikiStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     context.subscriptions.push(initWikiStatusBarItem);
     context.subscriptions.push(vscode.commands.registerCommand("wiki.initWiki", _ => {
         console.log("wiki initWiki");
@@ -53,8 +53,8 @@ export function activate(context: vscode.ExtensionContext) {
                 console.log("wiki initWiki input finish state:" + state);
                 if (state.wikiIsDeployed.toLowerCase() == wsutils.yes) {
                     console.log("wiki initWiki wiki deployed!");
-                    initWikiCreateLocal(state.wikiUrl, state.authorizationKey)
-                    const importantInfoUri = vscode.Uri.parse(`wiki:/ImportantInfo重要信息`);
+                    initWikiCreateLocal(state.wikiUrl, state.authorizationKey);
+                    const importantInfoUri = vscode.Uri.parse(`wiki:/重要信息ImportantInfo`);
                     memFs.writeFile(importantInfoUri, Buffer.from(wsutils.IMPORTANT_INFO_EASY), { create: true, overwrite: true, id: -1, isInit: true });
                     vscode.workspace.openTextDocument(importantInfoUri).then((document: vscode.TextDocument) => {
                         vscode.window.showTextDocument(document);
@@ -70,44 +70,44 @@ export function activate(context: vscode.ExtensionContext) {
                     }
                     vscode.window.showInformationMessage("Wiki.js 的部署将在后台进行，具体进度可以看右下角的状态栏(Wiki.js will be deployed in the background. See the status bar in the lower right corner for the specific progress)");
                     vscode.window.showInformationMessage("部署Wiki.js预计需要几分钟到十几分钟，请勿关闭vscode(It is estimated that deploying wiki.js will take several to more than ten minutes. Do not close vscode)");
-                    initWikiStatusBarItem.show()
-                    initWikiStatusBarItem.text = "Wiki data downloading(Wiki数据下载中)1/5......";
+                    initWikiStatusBarItem.show();
+                    initWikiStatusBarItem.text = "Wiki数据下载中(Wiki data downloading)1/5......";
                     wsutils.prepareWikiInitData(inputDirPath, (downloadZipPath: string) => {
-                        initWikiStatusBarItem.text = "Wiki data downloaded, unzipping(Wiki数据下载完毕, Wiki数据解压中)2/5......";
+                        initWikiStatusBarItem.text = "Wiki数据下载完毕, Wiki数据解压中(Wiki data downloaded, unzipping)2/5......";
                     }, (downloadDataDirPath: string) => {
-                        initWikiStatusBarItem.text = "Wiki data unzipped, old wiki docker clearing(Wiki数据解压完毕, 老Wiki程序清理中)3/5......";
+                        initWikiStatusBarItem.text = "Wiki数据解压完毕, 老Wiki程序清理中(Wiki data unzipped, old wiki docker clearing)3/5......";
                         wsutils.clearWikiDocker((error, stdout, stderr) => {
-                            initWikiStatusBarItem.text = "Old wiki docker cleared(老Wiki程序清理完毕)3/5......";
+                            initWikiStatusBarItem.text = "老Wiki程序清理完毕(Old wiki docker cleared)3/5......";
                             wsutils.fetchWikiDocker((error, stdout, stderr, isFinished: boolean) => {
-                                console.log(stdout + stderr)
-                                initWikiStatusBarItem.text = "Wiki docker image one fetching(Wiki镜像一获取中, 预计需要几分钟到十几分钟)4/5......";
+                                console.log(stdout + stderr);
+                                initWikiStatusBarItem.text = "Wiki镜像一获取中, 预计需要几分钟到十几分钟(Wiki docker image one fetching)4/5......";
                                 if (isFinished) {
-                                    initWikiStatusBarItem.text = "Wiki docker image one fetched(Wiki镜像一获取完毕)4/5......";
+                                    initWikiStatusBarItem.text = "Wiki镜像一获取完毕(Wiki docker image one fetched)4/5......";
                                     wsutils.fetchPostsqlDocker((error, stdout, stderr, isFinished: boolean) => {
-                                        initWikiStatusBarItem.text = "Wiki docker image two fetching(Wiki镜像二获取中, 预计需要几分钟到十几分钟)5/5......";
+                                        initWikiStatusBarItem.text = "Wiki镜像二获取中, 预计需要几分钟到十几分钟(Wiki docker image two fetching)5/5......";
                                         if (isFinished) {
-                                            initWikiStatusBarItem.text = "Wiki docker image two fetched(Wiki镜像二获取完毕)5/5......";
-                                            console.log(stdout + stderr)
+                                            initWikiStatusBarItem.text = "Wiki镜像二获取完毕(Wiki docker image two fetched)5/5......";
+                                            console.log(stdout + stderr);
                                             wsutils.wikiDockerRun(downloadDataDirPath, (error, stdout, stderr) => {
                                                 if (error != null && stderr != "") {
                                                     vscode.window.showInformationMessage("不好意思，Wiki.js部署失败!!(Sorry, wiki.js deployment failed)");
                                                     vscode.window.showInformationMessage("请检查Docker是否安装成功、网络环境是否存在问题，检查完毕之后可以重新进行 Wiki.js 的部署。(Please check whether docker is successfully installed and whether there are problems in the network environment. After checking, you can deploy wiki.js again.)");
-                                                    console.log(stdout + stderr)
+                                                    console.log(stdout + stderr);
                                                 } else {
                                                     vscode.window.showInformationMessage("恭喜您, Wiki.js部署成功, 请阅读 重要信息 文件(Congratulation wiki deployed, Please read ImportantInfo file)");
-                                                    initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION)
-                                                    console.log(stdout + stderr)
-                                                    const importantInfoUri = vscode.Uri.parse(`wiki:/ImportantInfo重要信息`);
+                                                    initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION);
+                                                    console.log(stdout + stderr);
+                                                    const importantInfoUri = vscode.Uri.parse(`wiki:/重要信息ImportantInfo`);
                                                     memFs.writeFile(importantInfoUri, Buffer.from(wsutils.buildImportantInfo(inputDirPath)), { create: true, overwrite: true, id: -1, isInit: true });
                                                     vscode.workspace.openTextDocument(importantInfoUri).then((document: vscode.TextDocument) => {
                                                         vscode.window.showTextDocument(document);
                                                     });
                                                 }
-                                            })
+                                            });
                                         }
-                                    })
+                                    });
                                 }
-                            })
+                            });
                         });
                     }, (reason: any) => {
                         if (reason == true) {
@@ -116,24 +116,14 @@ export function activate(context: vscode.ExtensionContext) {
                         } else {
                             wsutils.deleteWikiInitDataZip(inputDirPath);
                         }
-                    })
+                    });
                 }
             }, (reason: any) => {
                 console.error(reason);
-                vscode.window.showErrorMessage("Failed to initialize the Wiki.ws configuration file!");
+                vscode.window.showErrorMessage("Wiki插件初始化失败(Failed to initialize the Wiki.ws configuration file)!");
             });
         } else {
             vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
-        }
-    }));
-
-    context.subscriptions.push(vscode.commands.registerCommand("wiki.resetWiki", _ => {
-        if (!checkConfigFile()) {
-            return;
-        }
-        console.log("wiki resetWiki");
-        for (const [name] of memFs.readDirectory(vscode.Uri.parse("wiki:/"))) {
-            memFs.delete(vscode.Uri.parse(`wiki:/${name}`));
         }
     }));
 
@@ -149,7 +139,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }, (reason) => {
             console.error(reason);
-            vscode.window.showErrorMessage("Wiki search error!");
+            vscode.window.showErrorMessage("搜索失败(Wiki search error)!");
         });
     }));
 
@@ -168,10 +158,10 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(vscode.commands.registerCommand("wiki.uploadFileToWiki", (uri) => {
         let fileUri = uri;
         if (fileUri == undefined) {
-            let editor = vscode.window.activeTextEditor;
+            const editor = vscode.window.activeTextEditor;
             fileUri = editor?.document.uri;
             if (fileUri == undefined || fileUri.scheme != "wiki") {
-                return
+                return;
             }
             fileStatusBar.hide();
         }
@@ -208,7 +198,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteDirFileFromWiki", (dirUri) => {
         console.log("wiki deleteDirFileFromWiki path:" + dirUri.path);
-        vscode.window.showInputBox({ placeHolder: "print yes or no(输入yes或者no)", prompt: "Confirm deletion(确认删除吗)?" }).then((value: string | undefined) => {
+        vscode.window.showInputBox({ placeHolder: "输入yes或者no(print yes or no)", prompt: "确认删除吗(Confirm deletion)?" }).then((value: string | undefined) => {
             console.log("wiki deleteDirFileFromWiki print:" + value);
             if (value?.toLowerCase() != wsutils.yes) {
                 return;
@@ -234,30 +224,30 @@ export function activate(context: vscode.ExtensionContext) {
                 createAssetFolder(parentDirNameRemote).then((value: any) => {
                     const responseResult = value.assets.createFolder.responseResult;
                     if (!responseResult.succeeded) {
-                        vscode.window.showInformationMessage("Directory create error! " + responseResult.message);
+                        vscode.window.showInformationMessage("目录创建失败(Directory create error):" + responseResult.message);
                     } else {
-                        vscode.window.showInformationMessage("Directory created successfully. name:" + parentDirNameRemote);
+                        vscode.window.showInformationMessage("目录创建成功(Directory created successfully):" + parentDirNameRemote);
                         getFolderIdFromName(parentDirNameRemote.toLowerCase()).then((folderId: number) => {
                             if (folderId == undefined) {
-                                vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirNameRemote);
+                                vscode.window.showErrorMessage("目录ID获取失败(Failed to get the directory ID):" + parentDirNameRemote);
                             } else {
                                 uploadAssetToWikiInner(uri.path, folderId, parentDirNameRemote);
                             }
                         }, (reason: any) => {
                             console.error(reason);
-                            vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirNameRemote);
+                            vscode.window.showErrorMessage("目录ID获取失败(Failed to get the directory ID):" + parentDirNameRemote);
                         });
                     }
                 }, (reason: any) => {
                     console.error(reason);
-                    vscode.window.showErrorMessage("Failed to create directory. name:" + parentDirNameRemote);
+                    vscode.window.showErrorMessage("目录创建失败(Failed to create directory):" + parentDirNameRemote);
                 });
             } else {
                 uploadAssetToWikiInner(uri.path, folderId, parentDirNameRemote);
             }
         }, (reason: any) => {
             console.error(reason);
-            vscode.window.showErrorMessage("Failed to get the directory ID. name:" + parentDirName);
+            vscode.window.showErrorMessage("目录ID获取失败(Failed to get the directory ID):" + parentDirName);
         });
     }));
 
@@ -268,7 +258,7 @@ function initWikiCreateLocal(mainUrl: string, authorization: string) {
     console.log("mainUrl:" + mainUrl + ",authorization:" + authorization);
     wsutils.createSettingFile(mainUrl, authorization);
     vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
-    vscode.window.showInformationMessage("The configuration file is initialized! path in:" + wsutils.getSettingFilePath());
+    vscode.window.showInformationMessage("配置文件初始化成功(The configuration file is initialized):" + wsutils.getSettingFilePath());
     wsutils.initSetting();
 }
 
@@ -279,7 +269,7 @@ function uploadAssetToWikiInner(path: string, folderId: number, parentDirName: s
 function checkConfigFile(): boolean {
     const exist = wsutils.settingFileExist();
     if (!exist) {
-        vscode.window.showErrorMessage("The configuration file is not initialized! Please call the command:wiInitWiki!");
+        vscode.window.showErrorMessage("Wiki配置没有初始化，请调用命令(The configuration file is not initialized! Please call the):InitWiki");
     }
     return exist;
 }
@@ -293,7 +283,7 @@ function queryWikiFromIdInner(fileItem: FileItem, memFs: MemFS) {
         content = content.replace(/\\\\/g, `\\`);
         let parentDir = path.posix.dirname(fileItem.wikiPath);
         if (parentDir == "." || parentDir == undefined) {
-            parentDir = ""
+            parentDir = "";
         }
         memFs.createDirectory(vscode.Uri.parse(`wiki:/${parentDir}`));
         memFs.writeFile(fileItem.uri, Buffer.from(content), { create: true, overwrite: true, id: fileItem.id, isInit: true });
@@ -304,7 +294,7 @@ function queryWikiFromIdInner(fileItem: FileItem, memFs: MemFS) {
         });
     }, (reason) => {
         console.error(reason);
-        vscode.window.showErrorMessage("Query wiki from id error!");
+        vscode.window.showErrorMessage("查找Wiki文件失败(Query wiki from id error)");
     });
 }
 
@@ -317,7 +307,7 @@ function deleteFileFromWikiInner(memFs: MemFS, uri: vscode.Uri) {
         }
     } catch (error) {
         console.error(error);
-        vscode.window.showErrorMessage("This file cannot be found in wiki!");
+        vscode.window.showErrorMessage("文件不存在于Wiki中(This file cannot be found in wiki)");
         return;
     }
     console.log("wiki deleteFileFromWiki file:" + file.valueOf() + ",path:" + uri.path);
@@ -327,14 +317,14 @@ function deleteFileFromWikiInner(memFs: MemFS, uri: vscode.Uri) {
     deleteFileFromWiki(file.id).then((value: any) => {
         const responseResult = value.pages.delete.responseResult;
         if (!responseResult.succeeded) {
-            vscode.window.showInformationMessage("File delete error! " + responseResult.message);
+            vscode.window.showInformationMessage("文件删除失败(File delete error):" + responseResult.message);
         } else {
-            vscode.window.showInformationMessage("File deleted successfully:" + file.name);
+            vscode.window.showInformationMessage("文件删除成功(File deleted successfully):" + file.name);
         }
         memFs.delete(uri);
     }, (reason: any) => {
         console.error(reason);
-        vscode.window.showErrorMessage("Failed to delete a file!");
+        vscode.window.showErrorMessage("文件删除失败(Failed to delete a file)");
     });
 }
 
@@ -342,16 +332,16 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
     const scheme = uri.scheme;
     const title = path.split("/").pop()?.replace(".md", "");
     if (title?.indexOf(".") != -1) {
-        vscode.window.showErrorMessage("File name could not contain '.'(文件名不能包含'.'等异常字符)");
-        return
+        vscode.window.showErrorMessage("文件名不能包含'.'等异常字符(File name could not contain '.')");
+        return;
     }
     if (title?.indexOf("_") != -1) {
-        vscode.window.showErrorMessage("File name could not contain '_'(文件名不能包含下划线等异常字符)");
-        return
+        vscode.window.showErrorMessage("文件名不能包含下划线等异常字符(File name could not contain '_')");
+        return;
     }
     if (title?.indexOf(" ") != -1) {
-        vscode.window.showErrorMessage("File name could not contain space(文件名不能包含空格等异常字符)");
-        return
+        vscode.window.showErrorMessage("文件名不能包含空格等异常字符(File name could not contain space)");
+        return;
     }
     const endfix = "." + path.split("/").pop()?.split(".").pop();
     console.log("wiki uploadWikiNewFile path:" + path + ",title:" + title + ",endfix:" + endfix);
@@ -364,11 +354,11 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
         try {
             file = memFs.lookupAsFile(uri, false);
             if (file.id != -1) {
-                vscode.window.showErrorMessage("This file already exists in wiki! id is:" + file.id + ".");
+                vscode.window.showErrorMessage("文件已存在(This file already exists in wiki):" + file.id);
             }
         } catch (error) {
             console.error(error);
-            vscode.window.showErrorMessage("This file cannot be found in wiki!");
+            vscode.window.showErrorMessage("文件不存在与Wiki中(This file cannot be found in wiki)");
             return;
         }
         uploadWikiNewInner(title as string, path, endfix, (file as File).data?.toString() as string).then((value: any) => {
@@ -388,7 +378,7 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
             uploadWikiNewInner(title as string, filePath, endfix, buffer.toString());
         }, (reason: any) => {
             console.error(reason);
-            vscode.window.showErrorMessage("Failed to read the file!");
+            vscode.window.showErrorMessage("读取文件失败(Failed to read the file)");
         });
     }
 }
@@ -403,13 +393,13 @@ async function uploadWikiNewInner(title: string, filePath: string, endfix: strin
     return createWikiNewFile(content, "", filePath, title as string).then((value: any) => {
         const responseResult = value.pages.create.responseResult;
         if (!responseResult.succeeded) {
-            vscode.window.showErrorMessage("Upload file error! " + responseResult.message);
+            vscode.window.showErrorMessage("文件上传失败(Upload file error):" + responseResult.message);
         } else {
-            vscode.window.showInformationMessage("Upload file succeeded: " + filePath.split("/").pop());
+            vscode.window.showInformationMessage("文件上传成功(Upload file succeeded):" + filePath.split("/").pop());
         }
         return value;
     }, (reason: any) => {
         console.error(reason);
-        vscode.window.showErrorMessage("Failed to upload files!");
+        vscode.window.showErrorMessage("文件上传失败(Failed to upload files)");
     });
 }

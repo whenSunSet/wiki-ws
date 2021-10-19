@@ -96,11 +96,11 @@ export async function uploadAssetToWiki(filePath: string, folderId: number, pare
     }).then((value: any) => {
         console.log("wiki uploadAssetToWiki success path:" + filePath);
         const assetUrl = wsutils.wikiUrl + "/" + parentDirName.toLowerCase() + "/" + filePath.split("/").pop()?.toLowerCase().replace(/ /g, "_");
-        vscode.window.showInformationMessage("Uploading resources successfully:" + filePath.split("/").pop() + ". Url added to your clipboard.");
+        vscode.window.showInformationMessage("资源上传成功，资源链接已经存在于您的剪切板中(Uploading resources successfully:" + filePath.split("/").pop() + ". Url added to your clipboard)");
         vscode.env.clipboard.writeText(assetUrl);
     }, (reason: any) => {
         console.error(reason);
-        vscode.window.showErrorMessage("Failed to upload a resource! " + reason.message);
+        vscode.window.showErrorMessage("资源上传失败(Failed to upload a resource)" + reason.message);
     });
   });
   // return axios.post(wsutils.imageUploadUrl, formData, { headers });

@@ -25,7 +25,7 @@ export async function multiStepInput() {
 		return state as State;
 	}
 
-	const title = 'Init Wiki.ws Extension(初始化Wiki.ws插件)';
+	const title = '初始化Wiki.ws插件(Init Wiki.ws Extension)';
 
 	async function chooseInitWay(input: MultiStepInput, state: Partial<State>) {
 		state.wikiIsDeployed = await input.showInputBox({
@@ -33,7 +33,7 @@ export async function multiStepInput() {
 			step: 1,
 			totalSteps: 3,
 			value: typeof state.wikiIsDeployed === 'string' ? state.wikiIsDeployed : '',
-			prompt: 'Have you deployed Wiki.js? Enter yes or no(您是否已经部署了Wiki.js？请输入 yes 或者 no)',
+			prompt: '您是否已经部署了Wiki.js？请输入 yes 或者 no(Have you deployed Wiki.js? Enter yes or no)',
 			validate: validateNameIsUnique,
 			shouldResume: shouldResume
 		});
@@ -47,7 +47,7 @@ export async function multiStepInput() {
 				step: 2,
 				totalSteps: 3,
 				value: typeof state.wikiUrl === 'string' ? state.wikiUrl : '',
-				prompt: 'Please enter the link to the Wiki.js homepage(请输入Wiki.js主页的链接)',
+				prompt: '请输入Wiki.js主页的链接(Please enter the link to the Wiki.js homepage)',
 				validate: validateNameIsUnique,
 				shouldResume: shouldResume
 			});
@@ -59,7 +59,7 @@ export async function multiStepInput() {
 				step: 2,
 				totalSteps: 2,
 				value: typeof state.savedDirPathIfNotDeploy === 'string' ? state.savedDirPathIfNotDeploy : '',
-				prompt: 'Please enter the directory where you expect to deploy Wiki.js, the default directory is:' + defaultDir + '(请输入您期望部署Wiki.js的目录,默认目录是:' + defaultDir + ')',
+				prompt: '请输入您期望部署Wiki.js的目录，默认目录是:' + defaultDir + '(Please enter the directory where you expect to deploy Wiki.js, the default directory is:' + defaultDir + ")",
 				validate: validateNameIsUnique,
 				shouldResume: shouldResume
 			});
@@ -72,7 +72,7 @@ export async function multiStepInput() {
 			step: 3,
 			totalSteps: 3,
 			value: state.authorizationKey || '',
-			prompt: 'Please input authorization key,you can find the authorization key in this page:https://docs.requarks.io/dev/api(请输入Wiki.js的密钥,你可以从这个页面找到:https://docs.requarks.io/dev/api)',
+			prompt: '请输入Wiki.js的密钥,你可以从这个页面找到:https://docs.requarks.io/dev/api(Please input authorization key,you can find the authorization key in this page:https://docs.requarks.io/dev/api)',
 			validate: validateNameIsUnique,
 			shouldResume: shouldResume
 		});

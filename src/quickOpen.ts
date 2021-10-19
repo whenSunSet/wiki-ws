@@ -61,7 +61,7 @@ async function pickFile() {
 	try {
 		return await new Promise<FileItem | undefined>((resolve, reject) => {
 			const input = window.createQuickPick<FileItem | MessageItem>();
-			input.placeholder = "Type to search for files";
+			input.placeholder = "请输入关键字搜索(Type to search for files)";
 			disposables.push(
 				input.onDidChangeValue(value => {
 					if (!value) {
@@ -109,6 +109,6 @@ export function queryWikiFileListInner(key:string, callback: (fileList: Array<Fi
 		callback(fileList);
 	}, (reason: any) => {
 		console.error(reason);
-		vscode.window.showErrorMessage("wiki search error! network error!");
+		vscode.window.showErrorMessage("搜索失败，网络错误(wiki search error! network error)");
 	});
 }

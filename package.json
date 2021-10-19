@@ -31,52 +31,47 @@
 		"commands": [
 			{
 				"command": "wiki.uploadAssetToWiki",
-				"title": "wiUploadAssetToWiki(上传资源文件到Wiki)",
+				"title": "上传资源文件到Wiki(UploadAssetToWiki)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.deleteFileFromWiki",
-				"title": "wiDeleteFileFromWiki(从Wiki删除该文件)",
+				"title": "从Wiki删除该文件(DeleteFileFromWiki)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.deleteDirFileFromWiki",
-				"title": "wiDeleteDirFileFromWiki(从Wiki删除该目录下的所有MD文件)",
+				"title": "从Wiki删除该目录下的所有MD文件(DeleteDirFileFromWiki)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.uploadFilesInDirToWiki",
-				"title": "wiUploadFilesInDirToWiki(上传目录中所有的MD文件到Wiki)",
+				"title": "上传目录中所有的MD文件到Wiki(UploadFilesInDirToWiki)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.uploadFileToWiki",
-				"title": "wiUploadFileToWiki(上传MD文件到Wiki)",
+				"title": "上传文件到Wiki(UploadFileToWiki)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.initWiki",
-				"title": "wiInitWiki(初始化Wiki)",
-				"category": "wiki"
-			},
-			{
-				"command": "wiki.resetWiki",
-				"title": "wiResetWiki(删除所有本地缓存Wiki文件)",
+				"title": "初始化Wiki(InitWiki)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.searchInWiki",
-				"title": "wiSearchInWiki(搜索Wiki中的文件)",
+				"title": "在Wiki中搜索文件(SearchInWiki)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.fetchAllFileFromWikiInDir",
-				"title": "wiFetchAllFileFromWikiInDir(从Wiki中加载当前目录下的所有文件)",
+				"title": "从Wiki中加载当前目录下所有文件(FetchAllFileFromWikiInDir)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.fileStatus",
-				"title": "wiFileStatus(当前文件的状态)",
+				"title": "当前文件的状态(|FileStatus)",
 				"category": "wiki"
 			}
 		],
