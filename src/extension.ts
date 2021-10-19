@@ -13,8 +13,10 @@ export function activate(context: vscode.ExtensionContext) {
         wsutils.initSetting();
     }
 
-    const memFs = new MemFS();
-    context.subscriptions.push(vscode.workspace.registerFileSystemProvider("wiki", memFs, { isCaseSensitive: true }));
+    const wikiFs = new MemFS();
+    context.subscriptions.push(vscode.workspace.registerFileSystemProvider("wiki", wikiFs, { isCaseSensitive: true }));
+    const failedFs = new MemFS();
+    context.subscriptions.push(vscode.workspace.registerFileSystemProvider("failed", failedFs, { isCaseSensitive: true }));
 
     const fileStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
     fileStatusBar.command = "wiki.uploadFileToWiki";
@@ -30,7 +32,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
         let file: any = undefined;
         try {
-            file = memFs.lookupAsFile(uri, false);
+            file = wikiFs.lookupAsFile(uri, false);
         } catch (error) {
             console.error(error);
             vscode.window.showErrorMessage("Wiki中找不到这个文件(This file cannot be found in wiki!)");
@@ -55,7 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
                     console.log("wiki initWiki wiki deployed!");
                     initWikiCreateLocal(state.wikiUrl, state.authorizationKey);
                     const importantInfoUri = vscode.Uri.parse(`wiki:/重要信息ImportantInfo`);
-                    memFs.writeFile(importantInfoUri, Buffer.from(wsutils.IMPORTANT_INFO_EASY), { create: true, overwrite: true, id: -1, isInit: true });
+                    wikiFs.writeFile(importantInfoUri, Buffer.from(wsutils.IMPORTANT_INFO_EASY), { create: true, overwrite: true, id: -1, isInit: true });
                     vscode.workspace.openTextDocument(importantInfoUri).then((document: vscode.TextDocument) => {
                         vscode.window.showTextDocument(document);
                     });
@@ -90,6 +92,12 @@ export function activate(context: vscode.ExtensionContext) {
                                             console.log(stdout + stderr);
                                             wsutils.wikiDockerRun(downloadDataDirPath, (error, stdout, stderr) => {
                                                 if (error != null && stderr != "") {
+                                                    const importantInfoUri = vscode.Uri.parse(`failed:/为啥会失败？`);
+                                                    vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("failed:/"), name: "failed" });
+                                                    failedFs.writeFile(importantInfoUri, Buffer.from(wsutils.DEPLOY_FAILED_REASON), { create: true, overwrite: true, id: -1, isInit: true });
+                                                    vscode.workspace.openTextDocument(importantInfoUri).then((document: vscode.TextDocument) => {
+                                                        vscode.window.showTextDocument(document);
+                                                    });
                                                     vscode.window.showInformationMessage("不好意思，Wiki.js部署失败!!(Sorry, wiki.js deployment failed)");
                                                     vscode.window.showInformationMessage("请检查Docker是否安装成功、网络环境是否存在问题，检查完毕之后可以重新进行 Wiki.js 的部署。(Please check whether docker is successfully installed and whether there are problems in the network environment. After checking, you can deploy wiki.js again.)");
                                                     console.log(stdout + stderr);
@@ -98,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
                                                     initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION);
                                                     console.log(stdout + stderr);
                                                     const importantInfoUri = vscode.Uri.parse(`wiki:/重要信息ImportantInfo`);
-                                                    memFs.writeFile(importantInfoUri, Buffer.from(wsutils.buildImportantInfo(inputDirPath)), { create: true, overwrite: true, id: -1, isInit: true });
+                                                    wikiFs.writeFile(importantInfoUri, Buffer.from(wsutils.buildImportantInfo(inputDirPath)), { create: true, overwrite: true, id: -1, isInit: true });
                                                     vscode.workspace.openTextDocument(importantInfoUri).then((document: vscode.TextDocument) => {
                                                         vscode.window.showTextDocument(document);
                                                     });
@@ -135,7 +143,7 @@ export function activate(context: vscode.ExtensionContext) {
         quickOpen().then((fileItem: FileItem | undefined) => {
             if (fileItem) {
                 console.log("wiki searchInWiki open file:" + fileItem);
-                queryWikiFromIdInner(fileItem, memFs);
+                queryWikiFromIdInner(fileItem, wikiFs);
             }
         }, (reason) => {
             console.error(reason);
@@ -150,7 +158,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
         queryWikiFileListInner(dirUri.path.replace("/", ""), (fileList: Array<FileItem>) => {
             fileList.forEach((element: FileItem) => {
-                queryWikiFromIdInner(element, memFs);
+                queryWikiFromIdInner(element, wikiFs);
             });
         });
     }));
@@ -169,7 +177,7 @@ export function activate(context: vscode.ExtensionContext) {
         if (!checkConfigFile()) {
             return;
         }
-        uploadWikiNewFile(fileUri, fileUri.path, memFs);
+        uploadWikiNewFile(fileUri, fileUri.path, wikiFs);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.uploadFilesInDirToWiki", dirUri => {
@@ -178,22 +186,22 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         if (dirUri.scheme == "wiki") {
-            memFs.fileWalk(dirUri, (filePath: string) => {
+            wikiFs.fileWalk(dirUri, (filePath: string) => {
                 const uploadFileUri = vscode.Uri.parse(`wiki:${filePath}`);
                 console.log("wiki uploadFilesInDirToWiki fileWalk rootDirPath:" + dirUri.path + ",filePath:" + filePath);
-                uploadWikiNewFile(uploadFileUri, filePath, memFs);
+                uploadWikiNewFile(uploadFileUri, filePath, wikiFs);
             });
 
         } else {
             wsutils.walkFileSync(dirUri.path, (filePath: string) => {
                 console.log("wiki uploadFilesInDirToWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
-                uploadWikiNewFile(dirUri, filePath, memFs);
+                uploadWikiNewFile(dirUri, filePath, wikiFs);
             });
         }
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteFileFromWiki", (uri) => {
-        deleteFileFromWikiInner(memFs, uri);
+        deleteFileFromWikiInner(wikiFs, uri);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteDirFileFromWiki", (dirUri) => {
@@ -203,12 +211,12 @@ export function activate(context: vscode.ExtensionContext) {
             if (value?.toLowerCase() != wsutils.yes) {
                 return;
             }
-            memFs.fileWalk(dirUri, (filePath: string) => {
+            wikiFs.fileWalk(dirUri, (filePath: string) => {
                 console.log("wiki deleteDirFileFromWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
                 const deleteFileUri = vscode.Uri.parse(`wiki:${filePath}`);
-                deleteFileFromWikiInner(memFs, deleteFileUri);
+                deleteFileFromWikiInner(wikiFs, deleteFileUri);
             });
-            memFs.delete(dirUri);
+            wikiFs.delete(dirUri);
         });
     }));
 

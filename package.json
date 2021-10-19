@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.0.99",
+	"version": "1.0.999",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -109,10 +109,6 @@
 				}
 			],
 			"commandPalette": [
-				{
-					"command": "wiki.resetWiki",
-					"when": "workbenchState == workspace"
-				},
 				{
 					"command": "wiki.searchInWiki",
 					"when": "workbenchState == workspace"

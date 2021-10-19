@@ -51,6 +51,15 @@ export const IMPORTANT_INFO_EASY =
 	+ "I wish you a pleasant use. Please email me if you have any questions a1018998632@gmail.com\n"
 	+ "祝您使用愉快，有任何问题请邮件咨询: a1018998632@gmail.com"
 
+export const DEPLOY_FAILED_REASON = 
+"Windows的处理：\n"
++ '1."error during connect: This error may indicate that the docker daemon is not running": 执行 cd "C:\\Program Files\\Docker\\Docker" 和 ./DockerCli.exe -SwitchDaemon\n' 
++ '2.网络问题导致无法拉取到镜像：请百度搜索Docker如何更换源\n'
++ '3."no matching manifest for windows/amd64 10.0.18362 in the manifest list entries"：Docker Desktop-->Setting-->daemon.json-->experimental:true\n'
++ '4."Error response from daemon: hcsshim::CreateComputeSystem"：Bios没有开启虚拟化，请百度Bios如何开启虚拟化，不同主板开启方式不同，Intel和AMD的开启方式也不同。\n\n'
++ "Mac和Linux的处理：\n"
++ '1.网络问题导致无法拉取到镜像：请百度搜索Docker如何更换源'
+
 
 export function mkdirSettingDir(): string {
 	const settingPathDir = CACHE_DIR;
@@ -290,7 +299,7 @@ function downloadAndUnzipUrl(downloadZipDirPath: string, downloadZipUrl: string,
 }
 
 export function wikiDockerRun(initDataDirPath: string, callback: (error: any, stdout: string, stderr: string) => void) {
-	child_process.exec("cd " + initDataDirPath + " && " + "docker-compose up -d", callback)
+	child_process.exec("docker-compose -f" + initDataDirPath +  "/docker-compose.yml up -d", callback)
 }
 
 export function fetchPostsqlDocker(callback: (error: any, stdout: string, stderr: string, isFinished: boolean) => void) {
