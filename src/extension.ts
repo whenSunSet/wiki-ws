@@ -55,7 +55,7 @@ export function activate(context: vscode.ExtensionContext) {
                 console.log("wiki initWiki input finish state:" + state);
                 if (state.wikiIsDeployed.toLowerCase() == wsutils.yes) {
                     console.log("wiki initWiki wiki deployed!");
-                    initWikiCreateLocal(state.wikiUrl, state.authorizationKey);
+                    initWikiCreateLocal(state.wikiUrl, state.authorizationKey, "");
                     const importantInfoUri = vscode.Uri.parse(`wiki:/重要信息ImportantInfo`);
                     wikiFs.writeFile(importantInfoUri, Buffer.from(wsutils.IMPORTANT_INFO_EASY), { create: true, overwrite: true, id: -1, isInit: true });
                     vscode.workspace.openTextDocument(importantInfoUri).then((document: vscode.TextDocument) => {
@@ -103,7 +103,7 @@ export function activate(context: vscode.ExtensionContext) {
                                                     console.log(stdout + stderr);
                                                 } else {
                                                     vscode.window.showInformationMessage("恭喜您, Wiki.js部署成功, 请阅读 重要信息 文件(Congratulation wiki deployed, Please read ImportantInfo file)");
-                                                    initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION);
+                                                    initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION, inputDirPath);
                                                     console.log(stdout + stderr);
                                                     const importantInfoUri = vscode.Uri.parse(`wiki:/重要信息ImportantInfo`);
                                                     wikiFs.writeFile(importantInfoUri, Buffer.from(wsutils.buildImportantInfo(inputDirPath)), { create: true, overwrite: true, id: -1, isInit: true });
@@ -201,11 +201,17 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteFileFromWiki", (uri) => {
+        if (!checkConfigFile()) {
+            return;
+        }
         deleteFileFromWikiInner(wikiFs, uri);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteDirFileFromWiki", (dirUri) => {
         console.log("wiki deleteDirFileFromWiki path:" + dirUri.path);
+        if (!checkConfigFile()) {
+            return;
+        }
         vscode.window.showInputBox({ placeHolder: "输入yes或者no(print yes or no)", prompt: "确认删除吗(Confirm deletion)?" }).then((value: string | undefined) => {
             console.log("wiki deleteDirFileFromWiki print:" + value);
             if (value?.toLowerCase() != wsutils.yes) {
@@ -262,9 +268,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 }
 
-function initWikiCreateLocal(mainUrl: string, authorization: string) {
-    console.log("mainUrl:" + mainUrl + ",authorization:" + authorization);
-    wsutils.createSettingFile(mainUrl, authorization);
+function initWikiCreateLocal(mainUrl: string, authorization: string, inputDockerDir: string) {
+    console.log("mainUrl:" + mainUrl + ",authorization:" + authorization + ",inputDockerDir:" + inputDockerDir);
+    wsutils.createSettingFile(mainUrl, authorization, inputDockerDir);
     vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
     vscode.window.showInformationMessage("配置文件初始化成功(The configuration file is initialized):" + wsutils.getSettingFilePath());
     wsutils.initSetting();
@@ -278,8 +284,10 @@ function checkConfigFile(): boolean {
     const exist = wsutils.settingFileExist();
     if (!exist) {
         vscode.window.showErrorMessage("Wiki配置没有初始化，请调用命令(The configuration file is not initialized! Please call the):InitWiki");
+        return exist;
+    } else {
+        return wsutils.checkWikiDockerAliveAndRestart();
     }
-    return exist;
 }
 
 function queryWikiFromIdInner(fileItem: FileItem, memFs: MemFS) {
