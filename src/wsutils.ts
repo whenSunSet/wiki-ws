@@ -23,43 +23,9 @@ export const WIKI_DOCKER = "heshixi-wiki-js-default-deploy";
 export const WIKI_DB_DOCKER = "heshixi-wiki-js-db-default-deploy";
 export const WIKI_DOCKER_IMAGE = "requarks/wiki:2";
 export const WIKI_POSTGRES_IMAGE = "postgres:11-alpine";
-
-export function buildImportantInfo(useInputDir: string): string {
-	return "Please record the following information in case of need. In addition, the password and authentication key need to be modified as soon as possible\n"
-		+ "(请将下面的信息记录下来以备不时之需。此外密码和认证密钥需要尽快进行修改。\n\n"
-		+ "You can visit Wiki.js in browser(您可以在浏览器中通过这个网址访问Wiki.js): " + DEFAULT_WIKI_MAIN_URL + "\n\n"
-		+ "You Account name is(您的账号是): heshixi-test@gmail.com\n\n"
-		+ "You password is(您的密码是): heshixi-test\n\n"
-		+ "You authorization key is(您的认证密钥是): " + DEFAULT_WIKI_AUTHORIZATION + "\n\n"
-		+ "Your wiki.js data exists in this directory:" + useInputDir + ". Please take good care of it, otherwise there will be a risk of file loss\n"
-		+ "您的Wiki.js数据存在于这个目录下:" + useInputDir + "，请一定保管好它，否则将会存在文件丢失的风险。\n\n"
-		+ "You can manage the blog of wiki.js through this extension(您可以通过这个插件来管理Wiki.js的博客)\n\n"
-		+ "It should be noted that all files in the wiki directory of vscode only exist in memory, so please upload them to wiki.js through the extension as soon as possible after creating the files to avoid file loss\n"
-		+ "需要注意的是：vscode的wiki目录下所有的文件都是只存在于内存中，所以在创建了文件之后请尽快通过插件上传到 Wiki.js 中，避免文件的丢失。\n\n"
-		+ "At present, the extension only supports uploading blog files with .md suffix. Other file types will be uploaded as resource files\n"
-		+ "目前插件只支持上传.md后缀的博客文件，其他文件类型将会被当做资源文件上传\n\n"
-		+ "I wish you a pleasant use. Please email me if you have any questions a1018998632@gmail.com\n"
-		+ "祝您使用愉快，有任何问题请邮件咨询: a1018998632@gmail.com";
-}
-
-export const IMPORTANT_INFO_EASY =
-	"You can manage the blog of wiki.js through this extension(您可以通过这个插件来管理Wiki.js的博客)\n\n"
-	+ "It should be noted that all files in the wiki directory of vscode only exist in memory, so please upload them to wiki.js through the extension as soon as possible after creating the files to avoid file loss\n"
-	+ "需要注意的是：vscode的wiki目录下所有的文件都是只存在于内存中，所以在创建了文件之后请尽快通过插件上传到 Wiki.js 中，避免文件的丢失。\n\n"
-	+ "At present, the extension only supports uploading blog files with .md suffix. Other file types will be uploaded as resource files\n"
-	+ "目前插件只支持上传.md后缀的博客文件，其他文件类型将会被当做资源文件上传\n\n"
-	+ "I wish you a pleasant use. Please email me if you have any questions a1018998632@gmail.com\n"
-	+ "祝您使用愉快，有任何问题请邮件咨询: a1018998632@gmail.com"
-
-export const DEPLOY_FAILED_REASON =
-	"Windows的处理：\n"
-	+ '1."error during connect: This error may indicate that the docker daemon is not running": 执行 cd "C:\\Program Files\\Docker\\Docker" 和 ./DockerCli.exe -SwitchDaemon\n'
-	+ '2.网络问题导致无法拉取到镜像：请百度搜索Docker如何更换源\n'
-	+ '3."no matching manifest for windows/amd64 10.0.18362 in the manifest list entries"：Docker Desktop-->Setting-->daemon.json-->experimental:true\n'
-	+ '4."Error response from daemon: hcsshim::CreateComputeSystem"：Bios没有开启虚拟化，请百度Bios如何开启虚拟化，不同主板开启方式不同，Intel和AMD的开启方式也不同。\n\n'
-	+ "Mac和Linux的处理：\n"
-	+ '1.网络问题导致无法拉取到镜像：请百度搜索Docker如何更换源'
-
+export const WIKI_IMPORTANT_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/重要提示";
+export const WIKI_SIMPLE_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/简单提示";
+export const WIKI_FAILED_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/为什么会失败";
 
 export function mkdirSettingDir(): string {
 	const settingPathDir = CACHE_DIR;
@@ -315,7 +281,7 @@ export function fetchWikiDocker(callback: (error: any, stdout: string, stderr: s
 
 export function checkWikiDockerAliveAndRestart(): boolean {
 	if (inputDockerDir == "" || inputDockerDir == undefined) {
-		return false
+		return true;
 	}
 	const alive = dockerAlive(WIKI_DOCKER) && dockerAlive(WIKI_DB_DOCKER);
 	if (!alive) {

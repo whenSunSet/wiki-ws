@@ -6,7 +6,7 @@ import * as wsutils from "./wsutils";
 import { multiStepInput, State } from "./multiStepInput";
 import * as path from "path";
 import * as fs from 'fs';
-
+const opn = require('opn');
 export function activate(context: vscode.ExtensionContext) {
     console.log("wiki extension activate");
     if (wsutils.settingFileExist()) {
@@ -56,11 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
                 if (state.wikiIsDeployed.toLowerCase() == wsutils.yes) {
                     console.log("wiki initWiki wiki deployed!");
                     initWikiCreateLocal(state.wikiUrl, state.authorizationKey, "");
-                    const importantInfoUri = vscode.Uri.parse(`wiki:/重要信息ImportantInfo`);
-                    wikiFs.writeFile(importantInfoUri, Buffer.from(wsutils.IMPORTANT_INFO_EASY), { create: true, overwrite: true, id: -1, isInit: true });
-                    vscode.workspace.openTextDocument(importantInfoUri).then((document: vscode.TextDocument) => {
-                        vscode.window.showTextDocument(document);
-                    });
+                    opn(wsutils.WIKI_SIMPLE_INFO_URL);
                 } else {
                     let inputDirPath = state.savedDirPathIfNotDeploy;
                     if (inputDirPath == "" || inputDirPath == undefined) {
@@ -92,12 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
                                             console.log(stdout + stderr);
                                             wsutils.wikiDockerRun(downloadDataDirPath, (error, stdout, stderr) => {
                                                 if (error != null && stderr != "") {
-                                                    const importantInfoUri = vscode.Uri.parse(`failed:/为啥会失败？`);
-                                                    vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("failed:/"), name: "failed" });
-                                                    failedFs.writeFile(importantInfoUri, Buffer.from(wsutils.DEPLOY_FAILED_REASON), { create: true, overwrite: true, id: -1, isInit: true });
-                                                    vscode.workspace.openTextDocument(importantInfoUri).then((document: vscode.TextDocument) => {
-                                                        vscode.window.showTextDocument(document);
-                                                    });
+                                                    opn(wsutils.WIKI_FAILED_INFO_URL);
                                                     vscode.window.showInformationMessage("不好意思，Wiki.js部署失败!!(Sorry, wiki.js deployment failed)");
                                                     vscode.window.showInformationMessage("请检查Docker是否安装成功、网络环境是否存在问题，检查完毕之后可以重新进行 Wiki.js 的部署。(Please check whether docker is successfully installed and whether there are problems in the network environment. After checking, you can deploy wiki.js again.)");
                                                     console.log(stdout + stderr);
@@ -105,11 +96,7 @@ export function activate(context: vscode.ExtensionContext) {
                                                     vscode.window.showInformationMessage("恭喜您, Wiki.js部署成功, 请阅读 重要信息 文件(Congratulation wiki deployed, Please read ImportantInfo file)");
                                                     initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION, inputDirPath);
                                                     console.log(stdout + stderr);
-                                                    const importantInfoUri = vscode.Uri.parse(`wiki:/重要信息ImportantInfo`);
-                                                    wikiFs.writeFile(importantInfoUri, Buffer.from(wsutils.buildImportantInfo(inputDirPath)), { create: true, overwrite: true, id: -1, isInit: true });
-                                                    vscode.workspace.openTextDocument(importantInfoUri).then((document: vscode.TextDocument) => {
-                                                        vscode.window.showTextDocument(document);
-                                                    });
+                                                    opn(wsutils.WIKI_IMPORTANT_INFO_URL);
                                                 }
                                             });
                                         }

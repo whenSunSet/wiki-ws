@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.0.9999",
+	"version": "1.1.0",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -141,6 +141,7 @@
 		"graphql": "^15.6.1",
 		"graphql-request": "^3.5.0",
 		"ini": "^2.0.0",
-		"node-stream-zip": "^1.15.0"
+		"node-stream-zip": "^1.15.0",
+		"opn": "^6.0.0"
 	}
 }
