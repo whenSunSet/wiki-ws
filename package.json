@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -71,7 +71,7 @@
 			},
 			{
 				"command": "wiki.fileStatus",
-				"title": "当前文件的状态(|FileStatus)",
+				"title": "当前文件的状态(FileStatus)",
 				"category": "wiki"
 			}
 		],

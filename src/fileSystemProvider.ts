@@ -12,6 +12,7 @@ export class File implements vscode.FileStat {
 
     name: string;
     data?: Uint8Array;
+    dataRemote?: Uint8Array;
 
     constructor(name: string) {
         this.type = vscode.FileType.File;
@@ -49,7 +50,12 @@ export class MemFS implements vscode.FileSystemProvider {
 
     root = new Directory("");
 
+
     // --- manage file metadata
+
+    constructor(public fileStatus: vscode.StatusBarItem, public activeFile: File | undefined) {
+
+    }
 
     stat(uri: vscode.Uri): vscode.FileStat {
         console.log("MemFS.stat uri:" + uri);
@@ -114,11 +120,16 @@ export class MemFS implements vscode.FileSystemProvider {
         entry.data = content;
         if (options.id != undefined) {
             entry.id = options.id
+            entry.dataRemote = entry.data;
         }
         this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
+        this.fileStatus.show();
+        this.fileStatus.text = "未保存至Wiki.js";
         if (options.isInit != true) {
             Debounced.use(() => {
-                this.changeWikiContent(uri);
+                this.changeWikiContent(uri, () => {
+                    this.fileStatus.text = "已保存至Wiki.js";
+                });
             })()
         }
     }
@@ -270,7 +281,7 @@ export class MemFS implements vscode.FileSystemProvider {
         }, 5);
     }
 
-    private changeWikiContent(uri: vscode.Uri) {
+    private changeWikiContent(uri: vscode.Uri, changed: () => void) {
         const file = this.lookupAsFile(uri, false);
         console.log("MemFS.changeWikiContent uri:" + uri + ",file:" + file);
         if (file.id == undefined || file.id == -1) {
@@ -290,6 +301,8 @@ export class MemFS implements vscode.FileSystemProvider {
             if (!responseResult.succeeded) {
                 vscode.window.showErrorMessage("Change wiki content error! " + responseResult.message);
             }
+            file.dataRemote = file.data
+            changed();
             console.log("MemFS.changeWikiContent update success uri:" + uri);
         }, (reason: any) => {
             console.log(reason);

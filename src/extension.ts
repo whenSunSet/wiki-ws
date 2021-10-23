@@ -13,15 +13,45 @@ export function activate(context: vscode.ExtensionContext) {
         wsutils.initSetting();
     }
 
-    const wikiFs = new MemFS();
+    const uploadedFileStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
+    context.subscriptions.push(uploadedFileStatusBar);
+    context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => {
+        const editor = vscode.window.activeTextEditor;
+        const uri = editor?.document.uri;
+        if (uri == undefined || uri.scheme != "wiki" || !(uri.path as string).endsWith(".md")) {
+            uploadedFileStatusBar.hide();
+            return;
+        } else {
+            uploadedFileStatusBar.show();
+        }
+        let file: any = undefined;
+        try {
+            file = wikiFs.lookupAsFile(uri, false);
+        } catch (error) {
+            console.error(error);
+            vscode.window.showErrorMessage("Wiki中找不到这个文件(This file cannot be found in wiki!)");
+            return;
+        }
+        if (file.id != -1 && file.id != undefined) {
+            uploadedFileStatusBar.show();
+            if (file.data.toString() != file.dataRemote.toString()) {
+                uploadedFileStatusBar.text = "未保存至Wiki.js";
+            } else {
+                uploadedFileStatusBar.text = "已保存至Wiki.js";
+            }
+        } else {
+            uploadedFileStatusBar.hide();
+        }
+    }));
+
+    const wikiFs = new MemFS(uploadedFileStatusBar, undefined);
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider("wiki", wikiFs, { isCaseSensitive: true }));
-    const failedFs = new MemFS();
-    context.subscriptions.push(vscode.workspace.registerFileSystemProvider("failed", failedFs, { isCaseSensitive: true }));
 
     const fileStatusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
     fileStatusBar.command = "wiki.uploadFileToWiki";
     context.subscriptions.push(fileStatusBar);
     context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(() => {
+        wikiFs.activeFile = undefined;
         const editor = vscode.window.activeTextEditor;
         const uri = editor?.document.uri;
         if (uri == undefined || uri.scheme != "wiki" || !(uri.path as string).endsWith(".md")) {
@@ -33,7 +63,9 @@ export function activate(context: vscode.ExtensionContext) {
         let file: any = undefined;
         try {
             file = wikiFs.lookupAsFile(uri, false);
+            wikiFs.activeFile = file;
         } catch (error) {
+            wikiFs.activeFile = undefined;
             console.error(error);
             vscode.window.showErrorMessage("Wiki中找不到这个文件(This file cannot be found in wiki!)");
             return;
