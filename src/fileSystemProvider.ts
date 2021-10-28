@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import { changeWikiContent } from "./gql";
+import { SYSTEM_NEW_LINE_FORMAT, WIKI_NEW_LINE } from "./wsutils";
 
 export class File implements vscode.FileStat {
 
@@ -295,7 +296,7 @@ export class MemFS implements vscode.FileSystemProvider {
         }
         const title = file.name.replace(".md", "");
         content = content.replace(/\\/g, `\\\\`);
-        content = content.replace(/\n/g, "\\n");
+        content = content.replace(SYSTEM_NEW_LINE_FORMAT, WIKI_NEW_LINE);
         changeWikiContent(file.id, content, title).then((value: any) => {
             const responseResult = value.pages.update.responseResult;
             if (!responseResult.succeeded) {

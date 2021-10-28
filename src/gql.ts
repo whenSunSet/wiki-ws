@@ -72,6 +72,9 @@ export async function deleteFileFromWiki(id: number) {
 
 export async function uploadAssetToWiki(filePath: string, folderId: number, parentDirName: string) {
   console.log("wiki uploadImageToWiki filePath:" + filePath + ",folderId:" + folderId);
+  if(wsutils.isWindows) {
+    filePath = filePath.slice(1);
+  }
   const localFile = fs.createReadStream(filePath);
   const formData = new FormData();
   formData.append("mediaUpload", "{\"folderId\":" + folderId + "}");

@@ -81,77 +81,13 @@ export function activate(context: vscode.ExtensionContext) {
     const initWikiStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     context.subscriptions.push(initWikiStatusBarItem);
     context.subscriptions.push(vscode.commands.registerCommand("wiki.initWiki", _ => {
-        console.log("wiki initWiki");
-        if (!wsutils.settingFileExist()) {
-            multiStepInput().then((state: State) => {
-                console.log("wiki initWiki input finish state:" + state);
-                if (state.wikiIsDeployed.toLowerCase() == wsutils.yes) {
-                    console.log("wiki initWiki wiki deployed!");
-                    initWikiCreateLocal(state.wikiUrl, state.authorizationKey, "");
-                    opn(wsutils.WIKI_SIMPLE_INFO_URL);
-                } else {
-                    let inputDirPath = state.savedDirPathIfNotDeploy;
-                    if (inputDirPath == "" || inputDirPath == undefined) {
-                        inputDirPath = wsutils.mkdirSettingDir();
-                    } else {
-                        if (!fs.existsSync(inputDirPath)) {
-                            fs.mkdirSync(inputDirPath);
-                        }
-                    }
-                    vscode.window.showInformationMessage("Wiki.js 的部署将在后台进行，具体进度可以看右下角的状态栏(Wiki.js will be deployed in the background. See the status bar in the lower right corner for the specific progress)");
-                    vscode.window.showInformationMessage("部署Wiki.js预计需要几分钟到十几分钟，请勿关闭vscode(It is estimated that deploying wiki.js will take several to more than ten minutes. Do not close vscode)");
-                    initWikiStatusBarItem.show();
-                    initWikiStatusBarItem.text = "Wiki数据下载中(Wiki data downloading)1/5......";
-                    wsutils.prepareWikiInitData(inputDirPath, (downloadZipPath: string) => {
-                        initWikiStatusBarItem.text = "Wiki数据下载完毕, Wiki数据解压中(Wiki data downloaded, unzipping)2/5......";
-                    }, (downloadDataDirPath: string) => {
-                        initWikiStatusBarItem.text = "Wiki数据解压完毕, 老Wiki程序清理中(Wiki data unzipped, old wiki docker clearing)3/5......";
-                        wsutils.clearWikiDocker((error, stdout, stderr) => {
-                            initWikiStatusBarItem.text = "老Wiki程序清理完毕(Old wiki docker cleared)3/5......";
-                            wsutils.fetchWikiDocker((error, stdout, stderr, isFinished: boolean) => {
-                                console.log(stdout + stderr);
-                                initWikiStatusBarItem.text = "Wiki镜像一获取中, 预计需要几分钟到十几分钟(Wiki docker image one fetching)4/5......";
-                                if (isFinished) {
-                                    initWikiStatusBarItem.text = "Wiki镜像一获取完毕(Wiki docker image one fetched)4/5......";
-                                    wsutils.fetchPostsqlDocker((error, stdout, stderr, isFinished: boolean) => {
-                                        initWikiStatusBarItem.text = "Wiki镜像二获取中, 预计需要几分钟到十几分钟(Wiki docker image two fetching)5/5......";
-                                        if (isFinished) {
-                                            initWikiStatusBarItem.text = "Wiki镜像二获取完毕(Wiki docker image two fetched)5/5......";
-                                            console.log(stdout + stderr);
-                                            wsutils.wikiDockerRun(downloadDataDirPath, (error, stdout, stderr) => {
-                                                if (error != null && stderr != "") {
-                                                    opn(wsutils.WIKI_FAILED_INFO_URL);
-                                                    vscode.window.showInformationMessage("不好意思，Wiki.js部署失败!!(Sorry, wiki.js deployment failed)");
-                                                    vscode.window.showInformationMessage("请检查Docker是否安装成功、网络环境是否存在问题，检查完毕之后可以重新进行 Wiki.js 的部署。(Please check whether docker is successfully installed and whether there are problems in the network environment. After checking, you can deploy wiki.js again.)");
-                                                    console.log(stdout + stderr);
-                                                } else {
-                                                    vscode.window.showInformationMessage("恭喜您, Wiki.js部署成功, 请阅读 重要信息 文件(Congratulation wiki deployed, Please read ImportantInfo file)");
-                                                    initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION, inputDirPath);
-                                                    console.log(stdout + stderr);
-                                                    opn(wsutils.WIKI_IMPORTANT_INFO_URL);
-                                                }
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-                        });
-                    }, (reason: any) => {
-                        if (reason == true) {
-                            wsutils.deleteWikiInitDataDir(inputDirPath);
-                            wsutils.deleteWikiInitDataZip(inputDirPath);
-                        } else {
-                            wsutils.deleteWikiInitDataZip(inputDirPath);
-                        }
-                    });
-                }
-            }, (reason: any) => {
-                console.error(reason);
-                vscode.window.showErrorMessage("Wiki插件初始化失败(Failed to initialize the Wiki.ws configuration file)!");
-            });
-        } else {
-            vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
-        }
+        wsutils.changeSystem(false);
+        initWiki(initWikiStatusBarItem);
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.initWikiWindows", _ => {
+        wsutils.changeSystem(true);
+        initWiki(initWikiStatusBarItem);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.searchInWiki", _ => {
@@ -287,6 +223,80 @@ export function activate(context: vscode.ExtensionContext) {
 
 }
 
+function initWiki(initWikiStatusBarItem:vscode.StatusBarItem) {
+    console.log("wiki initWiki");
+    if (!wsutils.settingFileExist()) {
+        multiStepInput().then((state: State) => {
+            console.log("wiki initWiki input finish state:" + state);
+            if (state.wikiIsDeployed.toLowerCase() == wsutils.yes) {
+                console.log("wiki initWiki wiki deployed!");
+                initWikiCreateLocal(state.wikiUrl, state.authorizationKey, "");
+                opn(wsutils.WIKI_SIMPLE_INFO_URL);
+            } else {
+                let inputDirPath = state.savedDirPathIfNotDeploy;
+                if (inputDirPath == "" || inputDirPath == undefined) {
+                    inputDirPath = wsutils.mkdirSettingDir();
+                } else {
+                    if (!fs.existsSync(inputDirPath)) {
+                        fs.mkdirSync(inputDirPath);
+                    }
+                }
+                vscode.window.showInformationMessage("Wiki.js 的部署将在后台进行，具体进度可以看右下角的状态栏(Wiki.js will be deployed in the background. See the status bar in the lower right corner for the specific progress)");
+                vscode.window.showInformationMessage("部署Wiki.js预计需要几分钟到十几分钟，请勿关闭vscode(It is estimated that deploying wiki.js will take several to more than ten minutes. Do not close vscode)");
+                initWikiStatusBarItem.show();
+                initWikiStatusBarItem.text = "Wiki数据下载中(Wiki data downloading)1/5......";
+                wsutils.prepareWikiInitData(inputDirPath, (downloadZipPath: string) => {
+                    initWikiStatusBarItem.text = "Wiki数据下载完毕, Wiki数据解压中(Wiki data downloaded, unzipping)2/5......";
+                }, (downloadDataDirPath: string) => {
+                    initWikiStatusBarItem.text = "Wiki数据解压完毕, 老Wiki程序清理中(Wiki data unzipped, old wiki docker clearing)3/5......";
+                    wsutils.clearWikiDocker((error, stdout, stderr) => {
+                        initWikiStatusBarItem.text = "老Wiki程序清理完毕(Old wiki docker cleared)3/5......";
+                        wsutils.fetchWikiDocker((error, stdout, stderr, isFinished: boolean) => {
+                            console.log(stdout + stderr);
+                            initWikiStatusBarItem.text = "Wiki镜像一获取中, 预计需要几分钟到十几分钟(Wiki docker image one fetching)4/5......";
+                            if (isFinished) {
+                                initWikiStatusBarItem.text = "Wiki镜像一获取完毕(Wiki docker image one fetched)4/5......";
+                                wsutils.fetchPostsqlDocker((error, stdout, stderr, isFinished: boolean) => {
+                                    initWikiStatusBarItem.text = "Wiki镜像二获取中, 预计需要几分钟到十几分钟(Wiki docker image two fetching)5/5......";
+                                    if (isFinished) {
+                                        initWikiStatusBarItem.text = "Wiki镜像二获取完毕(Wiki docker image two fetched)5/5......";
+                                        console.log(stdout + stderr);
+                                        wsutils.wikiDockerRun(downloadDataDirPath, (error, stdout, stderr) => {
+                                            if (error != null && stderr != "") {
+                                                opn(wsutils.WIKI_FAILED_INFO_URL);
+                                                vscode.window.showInformationMessage("不好意思，Wiki.js部署失败!!(Sorry, wiki.js deployment failed)");
+                                                vscode.window.showInformationMessage("请检查Docker是否安装成功、网络环境是否存在问题，检查完毕之后可以重新进行 Wiki.js 的部署。(Please check whether docker is successfully installed and whether there are problems in the network environment. After checking, you can deploy wiki.js again.)");
+                                                console.log(stdout + stderr);
+                                            } else {
+                                                vscode.window.showInformationMessage("恭喜您, Wiki.js部署成功, 请阅读 重要信息 文件(Congratulation wiki deployed, Please read ImportantInfo file)");
+                                                initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION, inputDirPath);
+                                                console.log(stdout + stderr);
+                                                opn(wsutils.WIKI_IMPORTANT_INFO_URL);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    });
+                }, (reason: any) => {
+                    if (reason == true) {
+                        wsutils.deleteWikiInitDataDir(inputDirPath);
+                        wsutils.deleteWikiInitDataZip(inputDirPath);
+                    } else {
+                        wsutils.deleteWikiInitDataZip(inputDirPath);
+                    }
+                });
+            }
+        }, (reason: any) => {
+            console.error(reason);
+            vscode.window.showErrorMessage("Wiki插件初始化失败(Failed to initialize the Wiki.ws configuration file)!");
+        });
+    } else {
+        vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
+    }
+}
+
 function initWikiCreateLocal(mainUrl: string, authorization: string, inputDockerDir: string) {
     console.log("mainUrl:" + mainUrl + ",authorization:" + authorization + ",inputDockerDir:" + inputDockerDir);
     wsutils.createSettingFile(mainUrl, authorization, inputDockerDir);
@@ -313,7 +323,7 @@ function queryWikiFromIdInner(fileItem: FileItem, memFs: MemFS) {
     queryWikiFromId(fileItem.id).then((data: any) => {
         let content = JSON.stringify(data.pages.single.content, undefined, 2);
         content = content.substring(1, content.length - 1);
-        content = content.replace(/\\n/g, "\n");
+        content = content.replace(wsutils.WIKI_NEW_LINE_FORMAT, wsutils.SYSTEM_NEW_LINE);
         content = content.replace(/\\"/g, `"`);
         content = content.replace(/\\\\/g, `\\`);
         let parentDir = path.posix.dirname(fileItem.wikiPath);
@@ -420,7 +430,7 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
 
 async function uploadWikiNewInner(title: string, filePath: string, endfix: string, content: string) {
     content = content.replace(/\\/g, `\\\\`);
-    content = content.replace(/\n/g, "\\n");
+    content = content.replace(wsutils.SYSTEM_NEW_LINE_FORMAT, wsutils.WIKI_NEW_LINE);
     if (content == "") {
         content = "#";
     }

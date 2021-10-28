@@ -6,10 +6,10 @@ import * as fs from 'fs';
 import * as path from "path";
 import * as os from "os";
 import * as ini from "ini";
-import * as child_process from "child_process"
+import * as child_process from "child_process";
 import axios from "axios";
 import { GraphQLClient } from "graphql-request";
-import * as StreamZip from "node-stream-zip"
+import * as StreamZip from "node-stream-zip";
 import { Readable } from 'form-data';
 
 export const CACHE_DIR = os.homedir() + "/.Wiki-WS";
@@ -50,6 +50,23 @@ export let authorization = "";
 export let graphQLClient: any = undefined;
 export let wikiUrl = "";
 export let inputDockerDir = "";
+export let isWindows = false;
+export let SYSTEM_NEW_LINE = "\n";
+export let SYSTEM_NEW_LINE_FORMAT = /\n/g;
+export const WIKI_NEW_LINE = "\\n";
+export const WIKI_NEW_LINE_FORMAT = /\\n/g;
+
+export function changeSystem(isW: boolean) {
+	isWindows = isW;
+	if (isWindows) {
+		SYSTEM_NEW_LINE = "\r\n";
+		SYSTEM_NEW_LINE_FORMAT = /\r\n/g;
+	} else {
+		SYSTEM_NEW_LINE = "\n";
+		SYSTEM_NEW_LINE_FORMAT = /\n/g;
+	}
+	console.log("changeSystem isW:" + isW + ",NEW_LINE:" + SYSTEM_NEW_LINE + ",SYSTEM_NEW_LINE_FORMAT:" + SYSTEM_NEW_LINE_FORMAT);
+}
 
 export function settingFileExist(): boolean {
 	return fs.existsSync(getSettingFilePath());
@@ -62,7 +79,7 @@ export function initSetting() {
 export function initRequest(config: any) {
 	wikiUrl = config.base.wikiUrl;
 	gqlUrl = config.base.wikiUrl + "/graphql";
-	inputDockerDir = config.base.inputDockerDir
+	inputDockerDir = config.base.inputDockerDir;
 	imageUploadUrl = config.base.wikiUrl + "/u";
 	authorization = "Bearer " + config.base.authorization_key;
 	graphQLClient = new GraphQLClient(gqlUrl, {
@@ -238,7 +255,7 @@ function downloadAndUnzipUrl(downloadZipDirPath: string, downloadZipUrl: string,
 					unzipSuccess(downloadDataDirPath);
 				}, (reason: any) => {
 					error(reason);
-				})
+				});
 			}, (reason: any) => {
 				error(true);
 			});
@@ -255,20 +272,19 @@ function downloadAndUnzipUrl(downloadZipDirPath: string, downloadZipUrl: string,
 						unzipSuccess(downloadDataDirPath);
 					}, (reason: any) => {
 						error(reason);
-					})
+					});
 				}, (reason: any) => {
 					error(true);
 				});
 			}, (reason: any) => {
 				error(reason);
-			})
+			});
 		}
 	}
-
 }
 
 export function wikiDockerRun(initDataDirPath: string, callback: (error: any, stdout: string, stderr: string) => void) {
-	child_process.exec("docker-compose -f" + initDataDirPath + "/docker-compose.yml up -d", callback)
+	child_process.exec("docker-compose -f" + initDataDirPath + "/docker-compose.yml up -d", callback);
 }
 
 export function fetchPostsqlDocker(callback: (error: any, stdout: string, stderr: string, isFinished: boolean) => void) {
@@ -285,35 +301,37 @@ export function checkWikiDockerAliveAndRestart(): boolean {
 	}
 	const alive = dockerAlive(WIKI_DOCKER) && dockerAlive(WIKI_DB_DOCKER);
 	if (!alive) {
-		vscode.window.showErrorMessage("您的Wiki.js服务已停止，正在重启(Your Wiki.js service stopped, restarting)......")
+		vscode.window.showErrorMessage("您的Wiki.js服务已停止，正在重启(Your Wiki.js service stopped, restarting)......");
 		try {
 			child_process.exec("docker stop " + WIKI_DOCKER + " && " + "docker rm " + WIKI_DOCKER + " && " + "docker stop " + WIKI_DB_DOCKER + " && " + "docker rm " + WIKI_DB_DOCKER, () => {
 				try {
 					child_process.exec("docker-compose -f" + inputDockerDir + "/wiki-data/docker-compose.yml up -d", (error: any, stdout: string, stderr: string) => {
 						if (error != null && stderr != "") {
+							// do nothing
 						} else {
-							vscode.window.showInformationMessage("您的Wiki.js重启成功(Wiki.js service restarted)......")
+							vscode.window.showInformationMessage("您的Wiki.js重启成功(Wiki.js service restarted)......");
 						}
-					})
+					});
 				} catch (error) {
-					console.log(error)
+					console.log(error);
 				}
-			})
+			});
 		} catch (error) {
-			console.log(error)
+			console.log(error);
 			try {
 				child_process.exec("docker-compose -f" + inputDockerDir + "/wiki-data/docker-compose.yml up -d", (error: any, stdout: string, stderr: string) => {
 					if (error != null && stderr != "") {
+							// do nothing
 					} else {
-						vscode.window.showInformationMessage("您的Wiki.js重启成功(Wiki.js service restarted)......")
+						vscode.window.showInformationMessage("您的Wiki.js重启成功(Wiki.js service restarted)......");
 					}
-				})
+				});
 			} catch (error) {
-				console.log(error)
+				console.log(error);
 			}
 		}
 	}
-	return alive
+	return alive;
 }
 
 function dockerAlive(dockerName: string): boolean {
@@ -322,7 +340,7 @@ function dockerAlive(dockerName: string): boolean {
 }
 
 function run(arg: Array<string>, callback: (error: any, stdout: string, stderr: string, isFinished: boolean) => void) {
-	const run = child_process.spawn('docker', arg, {})
+	const run = child_process.spawn('docker', arg, {});
 	run.stdout.on("data", (data) => {
 		callback("", data.toString(), "", false);
 	});
@@ -339,9 +357,9 @@ function run(arg: Array<string>, callback: (error: any, stdout: string, stderr: 
 export function clearWikiDocker(callback: (error: any, stdout: string, stderr: string) => void) {
 	console.log("clearWikiDocker");
 	try {
-		child_process.exec("docker stop " + WIKI_DOCKER + " && " + "docker rm " + WIKI_DOCKER + " && " + "docker stop " + WIKI_DB_DOCKER + " && " + "docker rm " + WIKI_DB_DOCKER, callback)
+		child_process.exec("docker stop " + WIKI_DOCKER + " && " + "docker rm " + WIKI_DOCKER + " && " + "docker stop " + WIKI_DB_DOCKER + " && " + "docker rm " + WIKI_DB_DOCKER, callback);
 	} catch (error) {
-		console.log(error)
+		console.log(error);
 	}
 }
 
@@ -359,7 +377,7 @@ async function downloadFile(url: string, filepath: string, name: string) {
 		method: "GET",
 		responseType: "stream",
 	});
-	(response.data as Readable).pipe(writer)
+	(response.data as Readable).pipe(writer);
 	// response.data.pipe(writer);
 	return new Promise((resolve, reject) => {
 		writer.on("finish", resolve);

@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -22,6 +22,7 @@
 		"onCommand:wiki.uploadFilesInDirToWiki",
 		"onCommand:wiki.uploadFileToWiki",
 		"onCommand:wiki.initWiki",
+		"onCommand:wiki.initWikiWindows",
 		"onCommand:wiki.resetWiki",
 		"onCommand:wiki.searchInWiki",
 		"onCommand:wiki.deleteDirFileFromWiki"
@@ -57,6 +58,11 @@
 			{
 				"command": "wiki.initWiki",
 				"title": "初始化Wiki(InitWiki)",
+				"category": "wiki"
+			},
+			{
+				"command": "wiki.initWikiWindows",
+				"title": "初始化Wiki(InitWikiWindows)",
 				"category": "wiki"
 			},
 			{
@@ -115,7 +121,11 @@
 				},
 				{
 					"command": "wiki.initWiki",
-					"when": "workbenchState != workspace"
+					"when": "workbenchState != workspace && !isWindows"
+				},
+				{
+					"command": "wiki.initWikiWindows",
+					"when": "workbenchState != workspace && isWindows"
 				}
 			]
 		}
