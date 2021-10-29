@@ -26,6 +26,8 @@ export const WIKI_POSTGRES_IMAGE = "postgres:11-alpine";
 export const WIKI_IMPORTANT_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/重要提示";
 export const WIKI_SIMPLE_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/简单提示";
 export const WIKI_FAILED_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/为什么会失败";
+export const WIKI_NEW_LINE = "\\n";
+export const WIKI_NEW_LINE_FORMAT = /\\n/g;
 
 export function mkdirSettingDir(): string {
 	const settingPathDir = CACHE_DIR;
@@ -50,23 +52,9 @@ export let authorization = "";
 export let graphQLClient: any = undefined;
 export let wikiUrl = "";
 export let inputDockerDir = "";
-export let isWindows = false;
+export let isWindows = true;
 export let SYSTEM_NEW_LINE = "\n";
 export let SYSTEM_NEW_LINE_FORMAT = /\n/g;
-export const WIKI_NEW_LINE = "\\n";
-export const WIKI_NEW_LINE_FORMAT = /\\n/g;
-
-export function changeSystem(isW: boolean) {
-	isWindows = isW;
-	if (isWindows) {
-		SYSTEM_NEW_LINE = "\r\n";
-		SYSTEM_NEW_LINE_FORMAT = /\r\n/g;
-	} else {
-		SYSTEM_NEW_LINE = "\n";
-		SYSTEM_NEW_LINE_FORMAT = /\n/g;
-	}
-	console.log("changeSystem isW:" + isW + ",NEW_LINE:" + SYSTEM_NEW_LINE + ",SYSTEM_NEW_LINE_FORMAT:" + SYSTEM_NEW_LINE_FORMAT);
-}
 
 export function settingFileExist(): boolean {
 	return fs.existsSync(getSettingFilePath());
@@ -87,18 +75,32 @@ export function initRequest(config: any) {
 			authorization: authorization,
 		},
 	});
+	isWindows = config.base.isWindows;
+	changeSystem(isWindows)
 	console.log("config check gqlUrl:" + gqlUrl + ",imageUploadUrl:" + imageUploadUrl + ",authorization:" + authorization + ",inputDockerDir:" + inputDockerDir);
 }
 
-export function createSettingFile(url: string, authorizationKey: string, inputDockerDir: string) {
+export function createSettingFile(url: string, authorizationKey: string, inputDockerDir: string, isWindows:boolean) {
 	const config = {
 		base: {
 			"wikiUrl": url,
 			"authorization_key": authorizationKey,
-			"inputDockerDir": inputDockerDir
+			"inputDockerDir": inputDockerDir,
+			"isWindows": isWindows
 		}
 	};
 	fs.writeFileSync(getSettingFilePath(), ini.stringify(config, ""));
+}
+
+function changeSystem(isW: boolean) {
+	if (isW) {
+		SYSTEM_NEW_LINE = "\r\n";
+		SYSTEM_NEW_LINE_FORMAT = /\r\n/g;
+	} else {
+		SYSTEM_NEW_LINE = "\n";
+		SYSTEM_NEW_LINE_FORMAT = /\n/g;
+	}
+	console.log("changeSystem isW:" + isW + ",NEW_LINE:" + SYSTEM_NEW_LINE + ",SYSTEM_NEW_LINE_FORMAT:" + SYSTEM_NEW_LINE_FORMAT);
 }
 
 function handleResult<T>(resolve: (result: T) => void, reject: (error: Error) => void, error: Error | null | undefined, result: T): void {
