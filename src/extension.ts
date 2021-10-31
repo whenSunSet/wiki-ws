@@ -80,6 +80,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     const initWikiStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     context.subscriptions.push(initWikiStatusBarItem);
+
+    if (wsutils.initWikiWhenStartVscode) {
+        initWiki(initWikiStatusBarItem, undefined);
+    }
+
     context.subscriptions.push(vscode.commands.registerCommand("wiki.initWiki", _ => {
         initWiki(initWikiStatusBarItem, false);
     }));
@@ -88,20 +93,21 @@ export function activate(context: vscode.ExtensionContext) {
         initWiki(initWikiStatusBarItem, true);
     }));
 
+    if (wsutils.openSearchWhenInit) {
+        wsutils.createCacheFile(false);
+        searchInWiki(wikiFs);
+    }
     context.subscriptions.push(vscode.commands.registerCommand("wiki.searchInWiki", _ => {
         console.log("wiki searchInWiki");
         if (!checkConfigFile()) {
             return;
         }
-        quickOpen().then((fileItem: FileItem | undefined) => {
-            if (fileItem) {
-                console.log("wiki searchInWiki open file:" + fileItem);
-                queryWikiFromIdInner(fileItem, wikiFs);
-            }
-        }, (reason) => {
-            console.error(reason);
-            vscode.window.showErrorMessage("搜索失败(Wiki search error)!");
-        });
+        if (!wsutils.hasWikiWorkspace()) {
+            wsutils.createCacheFile(true);
+            initWiki(initWikiStatusBarItem, undefined)
+            return;
+        }
+        searchInWiki(wikiFs);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.fetchAllFileFromWikiInDir", dirUri => {
@@ -201,6 +207,20 @@ export function activate(context: vscode.ExtensionContext) {
         });
     }));
 
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.enableInitWikiWhenStartVscode", (dirUri) => {
+        console.log("wiki enableInitWikiWhenStartVscode");
+        if (!checkConfigFile()) {
+            return;
+        }
+        vscode.window.showInputBox({ placeHolder: "输入yes或者no(print yes or no)", prompt: "确认启动vscode时就初始化插件吗(Confirm init extension when start vscode)?" }).then((value: string | undefined) => {
+            console.log("wiki enableInitWikiWhenStartVscode print:" + value);
+            if (value?.toLowerCase() != wsutils.yes) {
+                return;
+            }
+            wsutils.createSettingFile(wsutils.wikiUrl, wsutils.authorization.replace("Bearer ", ""), wsutils.inputDockerDir, wsutils.isWindows, true);
+        });
+    }));
+
     context.subscriptions.push(vscode.commands.registerCommand("wiki.uploadAssetToWiki", (uri) => {
         console.log("wiki uploadAssetToWiki path:" + uri.path);
         if (!checkConfigFile()) {
@@ -243,14 +263,26 @@ export function activate(context: vscode.ExtensionContext) {
 
 }
 
-function initWiki(initWikiStatusBarItem: vscode.StatusBarItem, isWindows: boolean) {
+function searchInWiki(wikiFs: MemFS) {
+    quickOpen().then((fileItem: FileItem | undefined) => {
+        if (fileItem) {
+            console.log("wiki searchInWiki open file:" + fileItem);
+            queryWikiFromIdInner(fileItem, wikiFs);
+        }
+    }, (reason) => {
+        console.error(reason);
+        vscode.window.showErrorMessage("搜索失败(Wiki search error)!");
+    });
+}
+
+function initWiki(initWikiStatusBarItem: vscode.StatusBarItem, isWindows: boolean | undefined) {
     console.log("wiki initWiki");
     if (!wsutils.settingFileExist()) {
         multiStepInput().then((state: State) => {
             console.log("wiki initWiki input finish state:" + state);
             if (state.wikiIsDeployed.toLowerCase() == wsutils.yes) {
                 console.log("wiki initWiki wiki deployed!");
-                initWikiCreateLocal(state.wikiUrl, state.authorizationKey, "", isWindows);
+                initWikiCreateLocal(state.wikiUrl, state.authorizationKey, "", isWindows, false);
                 opn(wsutils.WIKI_SIMPLE_INFO_URL);
             } else {
                 let inputDirPath = state.savedDirPathIfNotDeploy;
@@ -289,7 +321,7 @@ function initWiki(initWikiStatusBarItem: vscode.StatusBarItem, isWindows: boolea
                                                 console.log(stdout + stderr);
                                             } else {
                                                 vscode.window.showInformationMessage("恭喜您, Wiki.js部署成功, 请阅读 重要信息 文件(Congratulation wiki deployed, Please read ImportantInfo file)");
-                                                initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION, inputDirPath, isWindows);
+                                                initWikiCreateLocal(wsutils.DEFAULT_WIKI_MAIN_URL, wsutils.DEFAULT_WIKI_AUTHORIZATION, inputDirPath, isWindows, false);
                                                 console.log(stdout + stderr);
                                                 opn(wsutils.WIKI_IMPORTANT_INFO_URL);
                                             }
@@ -313,16 +345,15 @@ function initWiki(initWikiStatusBarItem: vscode.StatusBarItem, isWindows: boolea
             vscode.window.showErrorMessage("Wiki插件初始化失败(Failed to initialize the Wiki.ws configuration file)!");
         });
     } else {
-        initWikiCreateLocal(wsutils.wikiUrl, wsutils.authorization.replace("Bearer ", ""), wsutils.inputDockerDir, isWindows);
-        vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
+        initWikiCreateLocal(wsutils.wikiUrl, wsutils.authorization.replace("Bearer ", ""), wsutils.inputDockerDir, isWindows, false);
     }
 }
 
-function initWikiCreateLocal(mainUrl: string, authorization: string, inputDockerDir: string, isWindows: boolean) {
+function initWikiCreateLocal(mainUrl: string, authorization: string, inputDockerDir: string, isWindows: boolean | undefined, initWikiWhenStartVscode: boolean) {
     console.log("mainUrl:" + mainUrl + ",authorization:" + authorization + ",inputDockerDir:" + inputDockerDir);
-    wsutils.createSettingFile(mainUrl, authorization, inputDockerDir, isWindows);
+    wsutils.createSettingFile(mainUrl, authorization, inputDockerDir, isWindows, initWikiWhenStartVscode);
+    wsutils.createCacheFile(wsutils.openSearchWhenInit);
     vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
-    vscode.window.showInformationMessage("配置文件初始化成功(The configuration file is initialized):" + wsutils.getSettingFilePath());
     wsutils.initSetting();
 }
 

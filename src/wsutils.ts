@@ -42,8 +42,17 @@ function getSettingFileName(): string {
 	return "setting.ini";
 }
 
+function getCacheFileName(): string {
+	return "cache.ini";
+}
+
 export function getSettingFilePath(): string {
 	const filePath = mkdirSettingDir() + "/" + getSettingFileName();
+	return filePath;
+}
+
+export function getCacheFilePath(): string {
+	const filePath = mkdirSettingDir() + "/" + getCacheFileName();
 	return filePath;
 }
 
@@ -56,16 +65,19 @@ export let inputDockerDir = "";
 export let isWindows = true;
 export let SYSTEM_NEW_LINE = "\n";
 export let SYSTEM_NEW_LINE_FORMAT = /\n/g;
+export let initWikiWhenStartVscode = false;
+
 
 export function settingFileExist(): boolean {
-	return fs.existsSync(getSettingFilePath());
+	return fs.existsSync(getSettingFilePath()) && fs.existsSync(getCacheFilePath());
 }
 
 export function initSetting() {
 	initRequest(ini.parse(fs.readFileSync(getSettingFilePath(), 'utf-8')));
+	initCache(ini.parse(fs.readFileSync(getCacheFilePath(), 'utf-8')));
 }
 
-export function initRequest(config: any) {
+function initRequest(config: any) {
 	wikiUrl = config.base.wikiUrl;
 	gqlUrl = config.base.wikiUrl + "/graphql";
 	inputDockerDir = config.base.inputDockerDir;
@@ -76,21 +88,64 @@ export function initRequest(config: any) {
 			authorization: authorization,
 		},
 	});
+
 	isWindows = config.base.isWindows;
+	if (isWindows != true) {
+		isWindows = false;
+	}
+
+	initWikiWhenStartVscode = config.base.initWikiWhenStartVscode
+	if (initWikiWhenStartVscode != true) {
+		initWikiWhenStartVscode = false;
+	}
 	changeSystem(isWindows)
 	console.log("config check gqlUrl:" + gqlUrl + ",imageUploadUrl:" + imageUploadUrl + ",authorization:" + authorization + ",inputDockerDir:" + inputDockerDir);
 }
 
-export function createSettingFile(url: string, authorizationKey: string, inputDockerDir: string, isWindows:boolean) {
+export let openSearchWhenInit = false;
+function initCache(config: any) {
+	openSearchWhenInit = config.base.openSearchWhenInit;
+	if (openSearchWhenInit != true) {
+		openSearchWhenInit = false;
+	}
+	console.log("initCache openSearchWhenInit:" + openSearchWhenInit);
+}
+
+export function createSettingFile(url: string, authorizationKey: string, inputDockerDir: string, isWindows: boolean | undefined, initWikiWhenStartVscode: boolean) {
+	if (isWindows == undefined || initWikiWhenStartVscode == undefined) {
+		return
+	}
 	const config = {
 		base: {
 			"wikiUrl": url,
 			"authorization_key": authorizationKey,
 			"inputDockerDir": inputDockerDir,
-			"isWindows": isWindows
+			"isWindows": isWindows,
+			"initWikiWhenStartVscode": initWikiWhenStartVscode,
 		}
 	};
 	fs.writeFileSync(getSettingFilePath(), ini.stringify(config, ""));
+}
+
+export function hasWikiWorkspace():boolean {
+	let hasWikiWorkspace = false; 
+	vscode.workspace.workspaceFolders?.forEach(element => {
+		let workspaceRootName = element.name;
+		if(workspaceRootName == "wiki") {
+			hasWikiWorkspace = true;
+		}
+	});
+	return hasWikiWorkspace;
+}
+
+export function createCacheFile(openS: boolean) {
+	const config = {
+		base: {
+			"openSearchWhenInit": openS
+		}
+	};
+	fs.writeFileSync(getCacheFilePath(), ini.stringify(config, ""));
+	openSearchWhenInit = openS;
 }
 
 function changeSystem(isW: boolean) {
@@ -324,7 +379,7 @@ export function checkWikiDockerAliveAndRestart(): boolean {
 			try {
 				child_process.exec("docker-compose -f" + inputDockerDir + "/wiki-data/docker-compose.yml up -d", (error: any, stdout: string, stderr: string) => {
 					if (error != null && stderr != "") {
-							// do nothing
+						// do nothing
 					} else {
 						vscode.window.showInformationMessage("您的Wiki.js重启成功(Wiki.js service restarted)......");
 					}

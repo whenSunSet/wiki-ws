@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.1.7",
+	"version": "1.1.8",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -16,16 +16,7 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onFileSystem:wiki",
-		"onCommand:wiki.uploadAssetToWiki",
-		"onCommand:wiki.deleteFileFromWiki",
-		"onCommand:wiki.uploadFilesInDirToWiki",
-		"onCommand:wiki.uploadFileToWiki",
-		"onCommand:wiki.initWiki",
-		"onCommand:wiki.initWikiWindows",
-		"onCommand:wiki.resetWiki",
-		"onCommand:wiki.searchInWiki",
-		"onCommand:wiki.deleteDirFileFromWiki"
+		"*"
 	],
 	"main": "./out/src/extension",
 	"contributes": {
@@ -79,6 +70,11 @@
 				"command": "wiki.fileStatus",
 				"title": "当前文件的状态(FileStatus)",
 				"category": "wiki"
+			},
+			{
+				"command": "wiki.enableInitWikiWhenStartVscode",
+				"title": "是否启动vscode时就启动wiki(EnableInitWikiWhenStartVscode)",
+				"category": "wiki"
 			}
 		],
 		"menus": {
@@ -117,7 +113,7 @@
 			"commandPalette": [
 				{
 					"command": "wiki.searchInWiki",
-					"when": "workbenchState == workspace"
+					"when": "true"
 				},
 				{
 					"command": "wiki.initWiki",
@@ -126,6 +122,38 @@
 				{
 					"command": "wiki.initWikiWindows",
 					"when": "workbenchState != workspace && isWindows"
+				},
+				{
+					"command": "wiki.enableInitWikiWhenStartVscode",
+					"when": "workbenchState == workspace && !isWindows"
+				},
+				{
+					"command": "wiki.uploadFilesInDirToWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.uploadFileToWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.deleteFileFromWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.deleteDirFileFromWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.fetchAllFileFromWikiInDir",
+					"when": "false"
+				},
+				{
+					"command": "wiki.uploadAssetToWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.fileStatus",
+					"when": "false"
 				}
 			]
 		}
