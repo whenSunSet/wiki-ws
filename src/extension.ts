@@ -116,8 +116,13 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         queryWikiFileListInner(dirUri.path.replace("/", ""), (fileList: Array<FileItem>) => {
+            let index = 0;
             fileList.forEach((element: FileItem) => {
-                queryWikiFromIdInner(element, wikiFs);
+                setTimeout(() => {
+                    vscode.window.showInformationMessage("文件拉取完毕(Fetched):" + element.fileName);
+                    queryWikiFromIdInner(element, wikiFs);
+                }, index * wsutils.FETCHING_TIME);
+                index = index + 1;
             });
         });
     }));
@@ -170,11 +175,11 @@ export function activate(context: vscode.ExtensionContext) {
                 console.log("wiki uploadFilesInDirToWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
                 let finalFilePath = filePath;
                 if (wsutils.isWindows) {
-                    finalFilePath = finalFilePath.slice(1);
+                    finalFilePath = finalFilePath.replace(/\\/g, "/");
                 }
                 setTimeout(() => {
                     vscode.window.showInformationMessage("文件上传中(Uploading):" + filePath);
-                    uploadWikiNewFile(dirUri, filePath, wikiFs);
+                    uploadWikiNewFile(dirUri, finalFilePath, wikiFs);
                 }, index * wsutils.UPLOADING_TIME);
                 index = index + 1;
             });
@@ -198,12 +203,16 @@ export function activate(context: vscode.ExtensionContext) {
             if (value?.toLowerCase() != wsutils.yes) {
                 return;
             }
+            let index = 0;
             wikiFs.fileWalk(dirUri, (filePath: string) => {
                 console.log("wiki deleteDirFileFromWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
                 const deleteFileUri = vscode.Uri.parse(`wiki:${filePath}`);
-                deleteFileFromWikiInner(wikiFs, deleteFileUri);
+                setTimeout(() => {
+                    vscode.window.showInformationMessage("文件删除中(Deleting):" + filePath);
+                    deleteFileFromWikiInner(wikiFs, deleteFileUri);
+                }, index * wsutils.DELETING_TIME);
+                index = index + 1;
             });
-            wikiFs.delete(dirUri);
         });
     }));
 
@@ -467,7 +476,7 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
             vscode.workspace.workspaceFolders?.forEach(element => {
                 let workspaceRootPath = element.uri.path;
                 if (wsutils.isWindows) {
-                    workspaceRootPath = workspaceRootPath.slice(0);
+                    workspaceRootPath = workspaceRootPath.slice(1);
                 }
                 if (workspaceRootPath != "/" && filePath.includes(workspaceRootPath)) {
                     const rootName = workspaceRootPath.split("/").pop();
