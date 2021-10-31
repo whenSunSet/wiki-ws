@@ -81,7 +81,7 @@ export function activate(context: vscode.ExtensionContext) {
     const initWikiStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
     context.subscriptions.push(initWikiStatusBarItem);
 
-    if (wsutils.initWikiWhenStartVscode) {
+    if (wsutils.initWikiWhenStartVscode && !wsutils.hasWikiWorkspace()) {
         initWiki(initWikiStatusBarItem, undefined);
     }
 
