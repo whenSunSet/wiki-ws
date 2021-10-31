@@ -130,6 +130,10 @@ export function activate(context: vscode.ExtensionContext) {
         if (!checkConfigFile()) {
             return;
         }
+        let finalFilePath = fileUri.path;
+        if (wsutils.isWindows) {
+            finalFilePath = finalFilePath.slice(1);
+        }
         uploadWikiNewFile(fileUri, fileUri.path, wikiFs);
     }));
 
@@ -146,8 +150,16 @@ export function activate(context: vscode.ExtensionContext) {
             });
 
         } else {
-            wsutils.walkFileSync(dirUri.path, (filePath: string) => {
+            let finalDirFilePath = dirUri.path;
+            if (wsutils.isWindows) {
+                finalDirFilePath = finalDirFilePath.slice(1);
+            }
+            wsutils.walkFileSync(finalDirFilePath, (filePath: string) => {
                 console.log("wiki uploadFilesInDirToWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
+                let finalFilePath = filePath;
+                if (wsutils.isWindows) {
+                    finalFilePath = finalFilePath.slice(1);
+                }
                 uploadWikiNewFile(dirUri, filePath, wikiFs);
             });
         }
@@ -412,7 +424,10 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
         wsutils.readFile(path).then((buffer) => {
             let filePath = path as string;
             vscode.workspace.workspaceFolders?.forEach(element => {
-                const workspaceRootPath = element.uri.path;
+                let workspaceRootPath = element.uri.path;
+                if(wsutils.isWindows) {
+                    workspaceRootPath = workspaceRootPath.slice(0); 
+                }
                 if (workspaceRootPath != "/" && filePath.includes(workspaceRootPath)) {
                     const rootName = workspaceRootPath.split("/").pop();
                     filePath = rootName + filePath.replace(workspaceRootPath, "");
