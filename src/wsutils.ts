@@ -28,6 +28,7 @@ export const WIKI_SIMPLE_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/�
 export const WIKI_FAILED_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/为什么会失败";
 export const WIKI_NEW_LINE = "\\n";
 export const WIKI_NEW_LINE_FORMAT = /\\n/g;
+export const UPLOADING_TIME = 1000;
 
 export function mkdirSettingDir(): string {
 	const settingPathDir = CACHE_DIR;

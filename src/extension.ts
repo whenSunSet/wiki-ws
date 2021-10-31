@@ -143,10 +143,15 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         if (dirUri.scheme == "wiki") {
+            let index = 0;
             wikiFs.fileWalk(dirUri, (filePath: string) => {
                 const uploadFileUri = vscode.Uri.parse(`wiki:${filePath}`);
                 console.log("wiki uploadFilesInDirToWiki fileWalk rootDirPath:" + dirUri.path + ",filePath:" + filePath);
-                uploadWikiNewFile(uploadFileUri, filePath, wikiFs);
+                setTimeout(() => {
+                    vscode.window.showInformationMessage("文件上传中(Uploading):" + filePath);
+                    uploadWikiNewFile(uploadFileUri, filePath, wikiFs);
+                }, index * wsutils.UPLOADING_TIME);
+                index = index + 1;
             });
 
         } else {
@@ -154,13 +159,18 @@ export function activate(context: vscode.ExtensionContext) {
             if (wsutils.isWindows) {
                 finalDirFilePath = finalDirFilePath.slice(1);
             }
+            let index = 0;
             wsutils.walkFileSync(finalDirFilePath, (filePath: string) => {
                 console.log("wiki uploadFilesInDirToWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
                 let finalFilePath = filePath;
                 if (wsutils.isWindows) {
                     finalFilePath = finalFilePath.slice(1);
                 }
-                uploadWikiNewFile(dirUri, filePath, wikiFs);
+                setTimeout(() => {
+                    vscode.window.showInformationMessage("文件上传中(Uploading):" + filePath);
+                    uploadWikiNewFile(dirUri, filePath, wikiFs);
+                }, index * wsutils.UPLOADING_TIME);
+                index = index + 1;
             });
         }
     }));
@@ -425,8 +435,8 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
             let filePath = path as string;
             vscode.workspace.workspaceFolders?.forEach(element => {
                 let workspaceRootPath = element.uri.path;
-                if(wsutils.isWindows) {
-                    workspaceRootPath = workspaceRootPath.slice(0); 
+                if (wsutils.isWindows) {
+                    workspaceRootPath = workspaceRootPath.slice(0);
                 }
                 if (workspaceRootPath != "/" && filePath.includes(workspaceRootPath)) {
                     const rootName = workspaceRootPath.split("/").pop();
