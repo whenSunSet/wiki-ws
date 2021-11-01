@@ -71,7 +71,11 @@ export let initWikiWhenStartVscode = false;
 
 
 export function settingFileExist(): boolean {
-	return fs.existsSync(getSettingFilePath()) && fs.existsSync(getCacheFilePath());
+	const result = fs.existsSync(getSettingFilePath());
+	if(!fs.existsSync(getCacheFilePath())) {
+		createCacheFile(false);
+	}
+	return result;
 }
 
 export function initSetting() {
@@ -96,11 +100,11 @@ function initRequest(config: any) {
 		isWindows = false;
 	}
 
-	initWikiWhenStartVscode = config.base.initWikiWhenStartVscode
+	initWikiWhenStartVscode = config.base.initWikiWhenStartVscode;
 	if (initWikiWhenStartVscode != true) {
 		initWikiWhenStartVscode = false;
 	}
-	changeSystem(isWindows)
+	changeSystem(isWindows);
 	console.log("config check gqlUrl:" + gqlUrl + ",imageUploadUrl:" + imageUploadUrl + ",authorization:" + authorization + ",inputDockerDir:" + inputDockerDir);
 }
 
@@ -115,7 +119,7 @@ function initCache(config: any) {
 
 export function createSettingFile(url: string, authorizationKey: string, inputDockerDir: string, isWindows: boolean | undefined, initWikiWhenStartVscode: boolean) {
 	if (isWindows == undefined || initWikiWhenStartVscode == undefined) {
-		return
+		return;
 	}
 	const config = {
 		base: {
@@ -132,7 +136,7 @@ export function createSettingFile(url: string, authorizationKey: string, inputDo
 export function hasWikiWorkspace():boolean {
 	let hasWikiWorkspace = false; 
 	vscode.workspace.workspaceFolders?.forEach(element => {
-		let workspaceRootName = element.name;
+		const workspaceRootName = element.name;
 		if(workspaceRootName == "wiki") {
 			hasWikiWorkspace = true;
 		}
