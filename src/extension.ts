@@ -56,9 +56,11 @@ export function activate(context: vscode.ExtensionContext) {
         const uri = editor?.document.uri;
         if (uri == undefined || uri.scheme != "wiki" || !(uri.path as string).endsWith(".md")) {
             fileStatusBar.hide();
+            openInWikiJsBar.hide();
             return;
         } else {
             fileStatusBar.show();
+            openInWikiJsBar.show();
         }
         let file: any = undefined;
         try {
@@ -72,10 +74,26 @@ export function activate(context: vscode.ExtensionContext) {
         }
         if (file.id != -1 && file.id != undefined) {
             fileStatusBar.hide();
+            openInWikiJsBar.show();
+            openInWikiJsBar.text = "<<点击在Wiki.js中打开(Open in Wiki.js)>>";
         } else {
             fileStatusBar.show();
+            openInWikiJsBar.hide();
             fileStatusBar.text = "<<不存在于(Not exists in)Wik.js, 点击上传(Click to upload)>>";
         }
+    }));
+
+    const openInWikiJsBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 1);
+    openInWikiJsBar.command = "wiki.openInWikiJS";
+    context.subscriptions.push(openInWikiJsBar);
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.openInWikiJS", dirUri => {
+        const editor = vscode.window.activeTextEditor;
+        const uri = editor?.document.uri;
+        if (uri == undefined || uri.scheme != "wiki" || !(uri.path as string).endsWith(".md")) {
+            return;
+        }
+        const url = wsutils.wikiBlogUrl + uri.path;
+        opn(url);
     }));
 
     const initWikiStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -104,7 +122,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
         if (!wsutils.hasWikiWorkspace()) {
             wsutils.createCacheFile(true);
-            initWiki(initWikiStatusBarItem, undefined)
+            initWiki(initWikiStatusBarItem, undefined);
             return;
         }
         searchInWiki(wikiFs);

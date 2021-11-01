@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.2.3",
+	"version": "1.2.4",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -72,6 +72,11 @@
 				"category": "wiki"
 			},
 			{
+				"command": "wiki.openInWikiJS",
+				"title": "在Wiki.js中打开(OpenInWikiJS)",
+				"category": "wiki"
+			},
+			{
 				"command": "wiki.enableInitWikiWhenStartVscode",
 				"title": "是否启动vscode时就启动wiki(EnableInitWikiWhenStartVscode)",
 				"category": "wiki"
@@ -81,6 +86,9 @@
 			"editor/title": [
 				{
 					"command": "wiki.fileStatus",
+					"when": "resourceScheme == wiki"
+				},{
+					"command": "wiki.openInWikiJS",
 					"when": "resourceScheme == wiki"
 				}
 			],
@@ -153,6 +161,10 @@
 				},
 				{
 					"command": "wiki.fileStatus",
+					"when": "false"
+				},
+				{
+					"command": "wiki.openInWikiJS",
 					"when": "false"
 				}
 			]

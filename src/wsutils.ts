@@ -63,6 +63,7 @@ export let imageUploadUrl = "";
 export let authorization = "";
 export let graphQLClient: any = undefined;
 export let wikiUrl = "";
+export let wikiBlogUrl = "";
 export let inputDockerDir = "";
 export let isWindows = true;
 export let SYSTEM_NEW_LINE = "\n";
@@ -85,6 +86,7 @@ export function initSetting() {
 
 function initRequest(config: any) {
 	wikiUrl = config.base.wikiUrl;
+	wikiBlogUrl = config.base.wikiUrl + "/zh";
 	gqlUrl = config.base.wikiUrl + "/graphql";
 	inputDockerDir = config.base.inputDockerDir;
 	imageUploadUrl = config.base.wikiUrl + "/u";
