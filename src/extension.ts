@@ -111,6 +111,31 @@ export function activate(context: vscode.ExtensionContext) {
         initWiki(initWikiStatusBarItem, true);
     }));
 
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.clearWiki", _ => {
+        const exist = wsutils.settingFileExist();
+        if (!exist) {
+            vscode.window.showErrorMessage("Wiki还没有初始化，不需要清理(The wiki is not initialized)!");
+            return;
+        }
+        vscode.window.showInputBox({ placeHolder: "输入yes或者no(print yes or no)", prompt: "确认清理吗？Wiki.js将会需要重新部署。(Confirm clear)?" }).then((value: string | undefined) => {
+            console.log("wiki deleteDirFileFromWiki print:" + value);
+            if (value?.toLowerCase() != wsutils.yes) {
+                return;
+            }
+            fs.unlinkSync(wsutils.getSettingFilePath());
+            fs.unlinkSync(wsutils.getCacheFilePath());
+            vscode.window.showInformationMessage("配置文件清理完毕(Setting file cleared)!");
+            if (wsutils.inputDockerDir != "" && wsutils.inputDockerDir != undefined) {
+                wsutils.moveWikiInitDataDirToOld(wsutils.inputDockerDir);
+                wsutils.deleteWikiInitDataZip(wsutils.inputDockerDir);
+                wsutils.clearWikiDocker((error, stdout, stderr) => {
+                    vscode.window.showInformationMessage("Wiki程序清理完毕(Wiki program has been cleaned up)!");
+                    vscode.workspace.updateWorkspaceFolders(0,1);
+                });
+            }
+        });
+    }));
+
     if (wsutils.openSearchWhenInit) {
         wsutils.createCacheFile(false);
         searchInWiki(wikiFs);

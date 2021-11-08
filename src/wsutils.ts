@@ -302,6 +302,12 @@ export function deleteWikiInitDataZip(inputDirPath: string) {
 	fs.unlinkSync(wikiDataZipPath);
 }
 
+export function moveWikiInitDataDirToOld(inputDirPath: string) {
+	const oldWikiDir = inputDirPath + "/wiki-data-old-" + new Date().getTime(); 
+    fs.renameSync(inputDirPath + "/" + WIKI_DATA_DIR_NAME, oldWikiDir)
+    vscode.window.showInformationMessage("老Wiki数据已经移动到(The old data has moved to):" + oldWikiDir);
+}
+
 function downloadAndUnzipUrl(downloadZipDirPath: string, downloadZipUrl: string, downloadZipPath: string, downloadDataDirPath: string,
 	downloadSuccess: (downloadZipPath: string) => void, unzipSuccess: (downloadDataDirPath: string) => void, error: (reason: any) => void) {
 	console.log("downloadAndUnzipUrl downloadZipDirPath:" + downloadZipDirPath + ",downloadZipUrl:" + downloadZipUrl +
