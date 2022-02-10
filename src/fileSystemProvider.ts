@@ -1,7 +1,9 @@
 import * as path from "path";
 import * as vscode from "vscode";
-import { changeWikiContent } from "./gql";
-import { SYSTEM_NEW_LINE_FORMAT, WIKI_NEW_LINE } from "./wsutils";
+import { changeWikiContent, queryWikiFromId } from "./gql";
+import { WIKI_NEW_LINE, yes } from "./wsutils";
+import * as constant from "./constant";
+import { FileItem } from "./quickOpen";
 
 export class File implements vscode.FileStat {
 
@@ -13,7 +15,7 @@ export class File implements vscode.FileStat {
 
     name: string;
     data?: Uint8Array;
-    dataRemote?: Uint8Array;
+    remoteUpdateAt?: string
 
     constructor(name: string) {
         this.type = vscode.FileType.File;
@@ -97,7 +99,7 @@ export class MemFS implements vscode.FileSystemProvider {
         throw vscode.FileSystemError.FileNotFound();
     }
 
-    writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean, overwrite: boolean, id: number, isInit: boolean }): void {
+    writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean, overwrite: boolean, id: number, isInit: boolean, remoteUpdateAt: string }): void {
         console.log("MemFS.writeFile uri:" + uri + ",options:" + options);
         const basename = path.posix.basename(uri.path);
         const parent = this._lookupParentDirectory(uri);
@@ -121,7 +123,7 @@ export class MemFS implements vscode.FileSystemProvider {
         entry.data = content;
         if (options.id != undefined) {
             entry.id = options.id
-            entry.dataRemote = entry.data;
+            entry.remoteUpdateAt = options.remoteUpdateAt
         }
         this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
         this.fileStatus.show();
@@ -133,6 +135,44 @@ export class MemFS implements vscode.FileSystemProvider {
                 });
             })()
         }
+    }
+
+    onlyChangeContent(uri: vscode.Uri, content: Uint8Array) {
+        const basename = path.posix.basename(uri.path);
+        const parent = this._lookupParentDirectory(uri);
+        let entry = parent.entries.get(basename);
+        if (entry instanceof Directory) {
+            throw vscode.FileSystemError.FileIsADirectory(uri);
+        }
+
+        if (!entry) {
+            entry = new File(basename);
+            parent.entries.set(basename, entry);
+            this._fireSoon({ type: vscode.FileChangeType.Created, uri });
+        }
+        entry.mtime = Date.now();
+        entry.size = content.byteLength;
+        entry.data = content;
+        this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
+        this.fileStatus.show();
+        this.fileStatus.text = "已保存至Wiki.js";
+    }
+
+    updateRemoteTime(uri: vscode.Uri, remoteUpdateAt: string): void {
+        const basename = path.posix.basename(uri.path);
+        const parent = this._lookupParentDirectory(uri);
+        let entry = parent.entries.get(basename);
+        if (entry instanceof Directory) {
+            throw vscode.FileSystemError.FileIsADirectory(uri);
+        }
+        if (!entry) {
+            entry = new File(basename);
+            parent.entries.set(basename, entry);
+            this._fireSoon({ type: vscode.FileChangeType.Created, uri });
+        }
+        entry.remoteUpdateAt = remoteUpdateAt
+        this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
+        console.log("MemFS.changeWikiContent6 remoteUpdateAt:" + remoteUpdateAt);
     }
 
     // --- manage files/folders
@@ -282,13 +322,80 @@ export class MemFS implements vscode.FileSystemProvider {
         }, 5);
     }
 
+    private _changingWikiContent: Boolean = false
     private changeWikiContent(uri: vscode.Uri, changed: () => void) {
         const file = this.lookupAsFile(uri, false);
-        console.log("MemFS.changeWikiContent uri:" + uri + ",file:" + file);
+        console.log("MemFS.changeWikiContent1 uri:" + uri + ",file:" + file);
         if (file.id == undefined || file.id == -1) {
             console.log("MemFS.changeWikiContent file not in remote");
             return;
         }
+        if (this._changingWikiContent) {
+            console.log("MemFS.changeWikiContent1.5 return");
+            return;
+        }
+        this._changingWikiContent = true
+        console.log("MemFS.changeWikiContent2 id:" + file.id);
+        queryWikiFromId(file.id).then((data: any) => {
+            console.log("MemFS.changeWikiContent3 remote:" + data.pages.single.updatedAt + ",now:" + file.remoteUpdateAt);
+            if (data.pages.single.updatedAt != file.remoteUpdateAt) {
+                vscode.window.showInputBox({ placeHolder: "输入yes或者no(print yes or no)", prompt: "远程的数据已经改变，确认本地数据覆盖远程数据吗(Remote data changed, confirm coverage)?" }).then((value: string | undefined) => {
+                    if (value?.toLowerCase() != yes) {
+                        vscode.window.showInputBox({ placeHolder: "输入yes或者no(print yes or no)", prompt: "是否拉取远程数据覆盖本地数据(Whether to pull remote data)?" }).then((value: string | undefined) => {
+                            if (value?.toLowerCase() != yes) {
+                                this._changingWikiContent = false
+                                return;
+                            }
+                            queryWikiFromIdInner(file.id, uri.path, (content: string, parentDir: string, data: any) => {
+                                this.onlyChangeContent(uri, Buffer.from(content));
+                                this.updateRemoteTime(uri, data.pages.single.updatedAt);
+                                console.log("MemFS.changeWikiContent4 remote:" + data.pages.single.updatedAt);
+                                this._changingWikiContent = false
+                            }, () => {
+                                this._changingWikiContent = false
+                            })
+                        }, (error: any) => {
+                            this._changingWikiContent = false
+                        })
+                        return;
+                    }
+                    this.changeWikiContentInner(uri, file, () => {
+                        console.log("MemFS.changeWikiContent4.5 now:" + file.remoteUpdateAt);
+                        queryWikiFromId(file.id).then((data: any) => {
+                            console.log("MemFS.changeWikiContent5 remote:" + data.pages.single.updatedAt);
+                            this.updateRemoteTime(uri, data.pages.single.updatedAt);
+                            changed()
+                            this._changingWikiContent = false
+                        }, (error: any) => {
+                            this._changingWikiContent = false
+                        })
+                    }, () => {
+                        this._changingWikiContent = false
+                    })
+                }, (error: any) => {
+                    this._changingWikiContent = false
+                });
+                return
+            }
+            this.changeWikiContentInner(uri, file, () => {
+                console.log("MemFS.changeWikiContent4.5 now:" + file.remoteUpdateAt);
+                queryWikiFromId(file.id).then((data: any) => {
+                    console.log("MemFS.changeWikiContent5 remote:" + data.pages.single.updatedAt);
+                    this.updateRemoteTime(uri, data.pages.single.updatedAt);
+                    changed()
+                    this._changingWikiContent = false
+                }, (error: any) => {
+                    this._changingWikiContent = false
+                })
+            }, () => {
+                this._changingWikiContent = false
+            })
+        }, (error: any) => {
+            this._changingWikiContent = false
+        })
+    }
+
+    private changeWikiContentInner(uri: vscode.Uri, file: File, changed: () => void, error: () => void) {
         let content = file.data?.toString();
         if (content == undefined) {
             vscode.window.showErrorMessage("This file content is undefine, error!");
@@ -296,17 +403,17 @@ export class MemFS implements vscode.FileSystemProvider {
         }
         const title = file.name.replace(".md", "");
         content = content.replace(/\\/g, `\\\\`);
-        content = content.replace(SYSTEM_NEW_LINE_FORMAT, WIKI_NEW_LINE);
+        content = content.replace(constant.SYSTEM_NEW_LINE_FORMAT, WIKI_NEW_LINE);
         changeWikiContent(file.id, content, title).then((value: any) => {
             const responseResult = value.pages.update.responseResult;
             if (!responseResult.succeeded) {
                 vscode.window.showErrorMessage("Change wiki content error! " + responseResult.message);
             }
-            file.dataRemote = file.data
             changed();
-            console.log("MemFS.changeWikiContent update success uri:" + uri);
+            console.log("changeWikiContentInner update success uri:" + uri);
         }, (reason: any) => {
             console.log(reason);
+            error();
             vscode.window.showErrorMessage("Failed to update wiki content, error!");
         })
     }
@@ -320,7 +427,7 @@ export class Debounced {
      * @param awit  时间
      * @param immediate 是否在触发事件后 在时间段n开始，立即执行，否则是时间段n结束，才执行
      */
-    static use(fn: Function, awit: number = 2000, immediate: boolean = false) {
+    static use(fn: Function, awit: number = 4000, immediate: boolean = false) {
         let timer: NodeJS.Timeout | null
         return (...args: any) => {
             if (timer) clearInterval(timer)
@@ -336,4 +443,23 @@ export class Debounced {
             }
         }
     }
+}
+
+export function queryWikiFromIdInner(id: number, wikiPath: string, success: (content: string, parentDir: string, data: any) => void, error: () => void) {
+    queryWikiFromId(id).then((data: any) => {
+        let content = JSON.stringify(data.pages.single.content, undefined, 2);
+        content = content.substring(1, content.length - 1);
+        content = content.replace(constant.WIKI_NEW_LINE_FORMAT, constant.SYSTEM_NEW_LINE);
+        content = content.replace(/\\"/g, `"`);
+        content = content.replace(/\\\\/g, `\\`);
+        let parentDir = path.posix.dirname(wikiPath);
+        if (parentDir == "." || parentDir == undefined) {
+            parentDir = "";
+        }
+        success(content, parentDir, data);
+    }, (reason) => {
+        console.error(reason);
+        error();
+        vscode.window.showErrorMessage("查找Wiki文件失败(Query wiki from id error)");
+    });
 }

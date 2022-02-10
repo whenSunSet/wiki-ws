@@ -13,7 +13,7 @@ export async function queryWikiFileList(key: string) {
 }
 
 export async function queryWikiFromId(id: number) {
-  const queryG = gql`query{pages{single(id:${id}){content}}}`;
+  const queryG = gql`query{pages{single(id:${id}){content,updatedAt}}}`;
   console.log("wiki queryWikiFromId id:" + id + ",queryG:" + queryG);
   const data = await wsutils.graphQLClient.request(queryG);
   return data;
@@ -40,8 +40,9 @@ export async function createWikiNewFile(content: string, description: string, pa
               slug
             }
             page{
-              id
-              content
+              id,
+              content,
+              updatedAt,
             }
           }
         }

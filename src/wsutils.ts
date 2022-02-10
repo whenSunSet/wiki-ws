@@ -8,6 +8,7 @@ import * as os from "os";
 import * as ini from "ini";
 import * as child_process from "child_process";
 import axios from "axios";
+import * as constant from "./constant";
 import { GraphQLClient } from "graphql-request";
 import * as StreamZip from "node-stream-zip";
 import { Readable } from 'form-data';
@@ -27,7 +28,6 @@ export const WIKI_IMPORTANT_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插�
 export const WIKI_SIMPLE_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/简单提示";
 export const WIKI_FAILED_INFO_URL = "https://wiki.heshixi.com/zh/Wiki-ws插件/为什么会失败";
 export const WIKI_NEW_LINE = "\\n";
-export const WIKI_NEW_LINE_FORMAT = /\\n/g;
 export const UPLOADING_TIME = 1000;
 export const DELETING_TIME = 1000;
 export const FETCHING_TIME = 500;
@@ -66,8 +66,6 @@ export let wikiUrl = "";
 export let wikiBlogUrl = "";
 export let inputDockerDir = "";
 export let isWindows = true;
-export let SYSTEM_NEW_LINE = "\n";
-export let SYSTEM_NEW_LINE_FORMAT = /\n/g;
 export let initWikiWhenStartVscode = false;
 
 
@@ -157,14 +155,7 @@ export function createCacheFile(openS: boolean) {
 }
 
 function changeSystem(isW: boolean) {
-	if (isW) {
-		SYSTEM_NEW_LINE = "\r\n";
-		SYSTEM_NEW_LINE_FORMAT = /\r\n/g;
-	} else {
-		SYSTEM_NEW_LINE = "\n";
-		SYSTEM_NEW_LINE_FORMAT = /\n/g;
-	}
-	console.log("changeSystem isW:" + isW + ",NEW_LINE:" + SYSTEM_NEW_LINE + ",SYSTEM_NEW_LINE_FORMAT:" + SYSTEM_NEW_LINE_FORMAT);
+	constant.changeSystem(isW);
 }
 
 function handleResult<T>(resolve: (result: T) => void, reject: (error: Error) => void, error: Error | null | undefined, result: T): void {
@@ -304,7 +295,7 @@ export function deleteWikiInitDataZip(inputDirPath: string) {
 
 export function moveWikiInitDataDirToOld(inputDirPath: string) {
 	const oldWikiDir = inputDirPath + "/wiki-data-old-" + new Date().getTime(); 
-    fs.renameSync(inputDirPath + "/" + WIKI_DATA_DIR_NAME, oldWikiDir)
+    fs.renameSync(inputDirPath + "/" + WIKI_DATA_DIR_NAME, oldWikiDir);
     vscode.window.showInformationMessage("老Wiki数据已经移动到(The old data has moved to):" + oldWikiDir);
 }
 

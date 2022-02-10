@@ -1,9 +1,10 @@
 import * as vscode from "vscode";
-import { File, MemFS } from "./fileSystemProvider";
+import { File, MemFS, queryWikiFromIdInner } from "./fileSystemProvider";
 import { quickOpen, FileItem, queryWikiFileListInner } from "./quickOpen";
-import { queryWikiFromId, createWikiNewFile, deleteFileFromWiki, uploadAssetToWiki, createAssetFolder, getFolderIdFromName } from "./gql";
+import { createWikiNewFile, deleteFileFromWiki, uploadAssetToWiki, createAssetFolder, getFolderIdFromName } from "./gql";
 import * as wsutils from "./wsutils";
 import { multiStepInput, State } from "./multiStepInput";
+import * as constant from "./constant";
 import * as path from "path";
 import * as fs from 'fs';
 const opn = require('opn');
@@ -130,7 +131,7 @@ export function activate(context: vscode.ExtensionContext) {
                 wsutils.deleteWikiInitDataZip(wsutils.inputDockerDir);
                 wsutils.clearWikiDocker((error, stdout, stderr) => {
                     vscode.window.showInformationMessage("Wiki程序清理完毕(Wiki program has been cleaned up)!");
-                    vscode.workspace.updateWorkspaceFolders(0,1);
+                    vscode.workspace.updateWorkspaceFolders(0, 1);
                 });
             }
         });
@@ -163,7 +164,9 @@ export function activate(context: vscode.ExtensionContext) {
             fileList.forEach((element: FileItem) => {
                 setTimeout(() => {
                     vscode.window.showInformationMessage("文件拉取完毕(Fetched):" + element.fileName);
-                    queryWikiFromIdInner(element, wikiFs);
+                    queryWikiFromIdInner(element.id, element.wikiPath, (content: string, parentDir: string, data: any) => {
+                        queryWikiSuccess(element, wikiFs, parentDir, content , data);
+                    }, ()=>{});
                 }, index * wsutils.FETCHING_TIME);
                 index = index + 1;
             });
@@ -319,11 +322,22 @@ function searchInWiki(wikiFs: MemFS) {
     quickOpen().then((fileItem: FileItem | undefined) => {
         if (fileItem) {
             console.log("wiki searchInWiki open file:" + fileItem);
-            queryWikiFromIdInner(fileItem, wikiFs);
+            queryWikiFromIdInner(fileItem.id, fileItem.wikiPath, (content: string, parentDir: string, data: any) => {
+                queryWikiSuccess(fileItem, wikiFs, parentDir, content , data);
+            }, ()=>{});
         }
     }, (reason) => {
         console.error(reason);
         vscode.window.showErrorMessage("搜索失败(Wiki search error)!");
+    });
+}
+
+function queryWikiSuccess(fileItem: FileItem, memFs: MemFS, parentDir: string, content: string, data: any) {
+    memFs.createDirectory(vscode.Uri.parse(`wiki:/${parentDir}`));
+    memFs.writeFile(fileItem.uri, Buffer.from(content), { create: true, overwrite: true, id: fileItem.id, isInit: true, remoteUpdateAt: data.pages.single.updatedAt });
+    vscode.workspace.openTextDocument(fileItem.uri).then((document: vscode.TextDocument) => {
+        console.log("wiki searchInWiki queryWikiFromId openTextDocument document:" + document);
+        vscode.window.showTextDocument(document);
     });
 }
 
@@ -423,30 +437,6 @@ function checkConfigFile(): boolean {
     }
 }
 
-function queryWikiFromIdInner(fileItem: FileItem, memFs: MemFS) {
-    queryWikiFromId(fileItem.id).then((data: any) => {
-        let content = JSON.stringify(data.pages.single.content, undefined, 2);
-        content = content.substring(1, content.length - 1);
-        content = content.replace(wsutils.WIKI_NEW_LINE_FORMAT, wsutils.SYSTEM_NEW_LINE);
-        content = content.replace(/\\"/g, `"`);
-        content = content.replace(/\\\\/g, `\\`);
-        let parentDir = path.posix.dirname(fileItem.wikiPath);
-        if (parentDir == "." || parentDir == undefined) {
-            parentDir = "";
-        }
-        memFs.createDirectory(vscode.Uri.parse(`wiki:/${parentDir}`));
-        memFs.writeFile(fileItem.uri, Buffer.from(content), { create: true, overwrite: true, id: fileItem.id, isInit: true });
-        console.log("wiki searchInWiki queryWikiFromId data:" + data + ",fileItem:" + fileItem);
-        vscode.workspace.openTextDocument(fileItem.uri).then((document: vscode.TextDocument) => {
-            console.log("wiki searchInWiki queryWikiFromId openTextDocument document:" + document);
-            vscode.window.showTextDocument(document);
-        });
-    }, (reason) => {
-        console.error(reason);
-        vscode.window.showErrorMessage("查找Wiki文件失败(Query wiki from id error)");
-    });
-}
-
 function deleteFileFromWikiInner(memFs: MemFS, uri: vscode.Uri) {
     let file: any = undefined;
     try {
@@ -511,7 +501,7 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
             return;
         }
         uploadWikiNewInner(title as string, path, endfix, (file as File).data?.toString() as string).then((value: any) => {
-            memFs.writeFile(uri, Buffer.from(value.pages.create.page.content as string), { create: false, overwrite: true, id: value.pages.create.page.id, isInit: false });
+            memFs.writeFile(uri, Buffer.from(value.pages.create.page.content as string), { create: false, overwrite: true, id: value.pages.create.page.id, isInit: false, remoteUpdateAt: value.pages.create.page.updatedAt });
         });
     } else {
         wsutils.readFile(path).then((buffer) => {
@@ -537,7 +527,7 @@ function uploadWikiNewFile(uri: any, path: string, memFs: MemFS) {
 
 async function uploadWikiNewInner(title: string, filePath: string, endfix: string, content: string) {
     content = content.replace(/\\/g, `\\\\`);
-    content = content.replace(wsutils.SYSTEM_NEW_LINE_FORMAT, wsutils.WIKI_NEW_LINE);
+    content = content.replace(constant.SYSTEM_NEW_LINE_FORMAT, wsutils.WIKI_NEW_LINE);
     if (content == "") {
         content = "#";
     }
