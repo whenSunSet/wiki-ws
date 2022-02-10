@@ -45,3 +45,6 @@
   - Fix some bug
 - 2021.10.17: 1.0.98 published
   - Fix some bug
+- 2022.02.10: 1.2.8
+  - 中文：新增多端数据同步，用户修改 wiki 内容时，如果本地数据与 wiki.js 数据不一致，会提示用户进行数据同步或者覆盖。
+  - English：Multi-data synchronization is added. When you modify wiki content, if the local data is inconsistent with wiki.js data, the system prompts you to synchronize or overwrite the data
