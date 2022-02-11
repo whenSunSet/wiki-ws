@@ -48,3 +48,10 @@
 - 2022.02.10: 1.2.8
   - 中文：新增多端数据同步，用户修改 wiki 内容时，如果本地数据与 wiki.js 数据不一致，会提示用户进行数据同步或者覆盖。
   - English：Multi-data synchronization is added. When you modify wiki content, if the local data is inconsistent with wiki.js data, the system prompts you to synchronize or overwrite the data
+- 2022.02.11: 1.2.9
+  - 中文：
+    - 1.新增上传目录中所有资源文件的功能
+    - 2.wiki 初始化的时候，如果当前不存在本地的 workspace 时，会自动在 ~/.Wiki-WS 中创建 temp 目录，以方便用户将临时文件放在里面。
+  - English：
+    - 1.Added the function of uploading all resource files in a directory 
+    - 2.During wiki initialization, if there is no local workspace, the temp directory is automatically created in ~/. Wiki-ws so that users can store temporary files in it.
