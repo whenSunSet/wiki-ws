@@ -480,7 +480,13 @@ function initWikiCreateLocal(mainUrl: string, authorization: string, inputDocker
     console.log("mainUrl:" + mainUrl + ",authorization:" + authorization + ",inputDockerDir:" + inputDockerDir);
     wsutils.createSettingFile(mainUrl, authorization, inputDockerDir, isWindows, initWikiWhenStartVscode);
     wsutils.createCacheFile(wsutils.openSearchWhenInit);
-    vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
+    const hasRealWorkspace = (vscode.workspace.workspaceFolders != undefined &&vscode.workspace.workspaceFolders?.length != 0);
+    if(!hasRealWorkspace) {
+        wsutils.mkdirTempDir();
+        vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" }, { uri: vscode.Uri.parse(wsutils.TEMP_DIR), name: "wiki-local" });
+    } else {
+        vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
+    }
     wsutils.initSetting();
 }
 
