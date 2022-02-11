@@ -165,8 +165,8 @@ export function activate(context: vscode.ExtensionContext) {
                 setTimeout(() => {
                     vscode.window.showInformationMessage("文件拉取完毕(Fetched):" + element.fileName);
                     queryWikiFromIdInner(element.id, element.wikiPath, (content: string, parentDir: string, data: any) => {
-                        queryWikiSuccess(element, wikiFs, parentDir, content , data);
-                    }, ()=>{});
+                        queryWikiSuccess(element, wikiFs, parentDir, content, data);
+                    }, () => { });
                 }, index * wsutils.FETCHING_TIME);
                 index = index + 1;
             });
@@ -232,6 +232,44 @@ export function activate(context: vscode.ExtensionContext) {
         }
     }));
 
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.UploadAssetsInDirToWiki", dirUri => {
+        console.log("wiki UploadAssetsInDirToWiki path:" + dirUri.path);
+        if (!checkConfigFile()) {
+            return;
+        }
+        let finalDirFilePath = dirUri.path;
+        if (wsutils.isWindows) {
+            finalDirFilePath = finalDirFilePath.slice(1);
+        }
+        const filePathList: Array<string> = [];
+        wsutils.walkFileSync(finalDirFilePath, (filePath: string) => {
+            let finalFilePath = filePath;
+            if (wsutils.isWindows) {
+                finalFilePath = finalFilePath.replace(/\\/g, "/");
+            }
+            console.log("wiki UploadAssetsInDirToWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
+            if(!filePath.endsWith(".md")) {
+                filePathList.push(filePath);
+            }
+        });
+        const assetUrlList: Array<string> = [];
+        let finalClipBoard = "";
+        if (filePathList.length > 0) {
+            updateAssetToWikiRecursive(filePathList, assetUrlList, 0, ()=>{
+                console.log("wiki UploadAssetsInDirToWiki assetUrlList:" + assetUrlList);
+                assetUrlList.forEach(element => {
+                    finalClipBoard = finalClipBoard + "[" + element.split("/").pop() + "](" + element + ")\n";
+                });
+                vscode.window.showInformationMessage("所有资源上传成功，所有资源链接均已经存在于您的剪切板中(All resources have been uploaded successfully and all resource links already exist in your clipboard)");
+                vscode.env.clipboard.writeText(finalClipBoard);
+                console.log("wiki UploadAssetsInDirToWiki finalClipBoard:" + finalClipBoard);
+            });
+        } else {
+            console.log("wiki UploadAssetsInDirToWiki no assets");
+            vscode.window.showInformationMessage("目录中无资源文件(No Assets)");
+        }
+    }));
+
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteFileFromWiki", (uri) => {
         if (!checkConfigFile()) {
             return;
@@ -281,41 +319,64 @@ export function activate(context: vscode.ExtensionContext) {
         if (!checkConfigFile()) {
             return;
         }
-        const parentDirName = path.basename(path.dirname(uri.path));
-        const parentDirNameRemote = parentDirName.replace(/ /g, "_").toLowerCase().trim();
-        getFolderIdFromName(parentDirNameRemote).then((folderId: number) => {
-            if (folderId == undefined) {
-                createAssetFolder(parentDirNameRemote).then((value: any) => {
-                    const responseResult = value.assets.createFolder.responseResult;
-                    if (!responseResult.succeeded) {
-                        vscode.window.showInformationMessage("目录创建失败(Directory create error):" + responseResult.message);
-                    } else {
-                        vscode.window.showInformationMessage("目录创建成功(Directory created successfully):" + parentDirNameRemote);
-                        getFolderIdFromName(parentDirNameRemote.toLowerCase()).then((folderId: number) => {
-                            if (folderId == undefined) {
-                                vscode.window.showErrorMessage("目录ID获取失败(Failed to get the directory ID):" + parentDirNameRemote);
-                            } else {
-                                uploadAssetToWikiInner(uri.path, folderId, parentDirNameRemote);
-                            }
-                        }, (reason: any) => {
-                            console.error(reason);
-                            vscode.window.showErrorMessage("目录ID获取失败(Failed to get the directory ID):" + parentDirNameRemote);
-                        });
-                    }
-                }, (reason: any) => {
-                    console.error(reason);
-                    vscode.window.showErrorMessage("目录创建失败(Failed to create directory):" + parentDirNameRemote);
-                });
-            } else {
-                uploadAssetToWikiInner(uri.path, folderId, parentDirNameRemote);
-            }
-        }, (reason: any) => {
-            console.error(reason);
-            vscode.window.showErrorMessage("目录ID获取失败(Failed to get the directory ID):" + parentDirName);
-        });
+        updateAssetToWiki(uri.path, (assetUrl: string) => {
+            vscode.window.showInformationMessage("资源上传成功，资源链接已经存在于您的剪切板中(Uploading resources successfully:" + uri.path.split("/").pop() + ". Url added to your clipboard)");
+            const finalClipBoard = "[" + assetUrl.split("/").pop() + "](" + assetUrl + ")";
+            vscode.env.clipboard.writeText(finalClipBoard);
+        }, () => { });
     }));
+}
 
+function updateAssetToWikiRecursive(filePathList: Array<string>, assetUrlList: Array<string>, index: number, end:()=>void) {
+    updateAssetToWiki(filePathList[index], (assetUrl: string) => {
+        vscode.window.showInformationMessage((index + 1) + "/" + filePathList.length + "资源上传成功(Uploading resources successfully:" + filePathList[index].split("/").pop());
+        assetUrlList.push(assetUrl);
+        if((index + 1) < filePathList.length) {
+            updateAssetToWikiRecursive(filePathList, assetUrlList, index + 1, end);
+        } else {
+            end();
+        }
+    }, () => { });
+}
 
+function updateAssetToWiki(filePath: string, succeed: (assetUrl: string) => void, error: () => void) {
+    const parentDirName = path.basename(path.dirname(filePath));
+    const parentDirNameRemote = parentDirName.replace(/ /g, "_").toLowerCase().trim();
+    getFolderIdFromName(parentDirNameRemote).then((folderId: number) => {
+        if (folderId == undefined) {
+            createAssetFolder(parentDirNameRemote).then((value: any) => {
+                const responseResult = value.assets.createFolder.responseResult;
+                if (!responseResult.succeeded) {
+                    vscode.window.showInformationMessage("目录创建失败(Directory create error):" + responseResult.message);
+                    error();
+                } else {
+                    vscode.window.showInformationMessage("目录创建成功(Directory created successfully):" + parentDirNameRemote);
+                    getFolderIdFromName(parentDirNameRemote.toLowerCase()).then((folderId: number) => {
+                        if (folderId == undefined) {
+                            error();
+                            vscode.window.showErrorMessage("目录ID获取失败(Failed to get the directory ID):" + parentDirNameRemote);
+                        } else {
+                            uploadAssetToWikiInner(filePath, folderId, parentDirNameRemote, succeed, error);
+                        }
+                    }, (reason: any) => {
+                        error();
+                        console.error(reason);
+                        vscode.window.showErrorMessage("目录ID获取失败(Failed to get the directory ID):" + parentDirNameRemote);
+                    });
+                }
+            }, (reason: any) => {
+                error();
+                console.error(reason);
+                vscode.window.showErrorMessage("目录创建失败(Failed to create directory):" + parentDirNameRemote);
+            });
+        } else {
+            uploadAssetToWikiInner(filePath, folderId, parentDirNameRemote, succeed, error);
+        }
+    }, (reason: any) => {
+        error();
+        console.error(reason);
+        vscode.window.showErrorMessage("目录ID获取失败(Failed to get the directory ID):" + parentDirName);
+    });
 }
 
 function searchInWiki(wikiFs: MemFS) {
@@ -323,8 +384,8 @@ function searchInWiki(wikiFs: MemFS) {
         if (fileItem) {
             console.log("wiki searchInWiki open file:" + fileItem);
             queryWikiFromIdInner(fileItem.id, fileItem.wikiPath, (content: string, parentDir: string, data: any) => {
-                queryWikiSuccess(fileItem, wikiFs, parentDir, content , data);
-            }, ()=>{});
+                queryWikiSuccess(fileItem, wikiFs, parentDir, content, data);
+            }, () => { });
         }
     }, (reason) => {
         console.error(reason);
@@ -423,8 +484,8 @@ function initWikiCreateLocal(mainUrl: string, authorization: string, inputDocker
     wsutils.initSetting();
 }
 
-function uploadAssetToWikiInner(path: string, folderId: number, parentDirName: string) {
-    uploadAssetToWiki(path as string, folderId, parentDirName);
+function uploadAssetToWikiInner(path: string, folderId: number, parentDirName: string, succeed: (assetUrl: string) => void, error: () => void) {
+    uploadAssetToWiki(path as string, folderId, parentDirName, succeed, error);
 }
 
 function checkConfigFile(): boolean {

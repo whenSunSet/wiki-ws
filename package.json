@@ -42,6 +42,11 @@
 				"category": "wiki"
 			},
 			{
+				"command": "wiki.UploadAssetsInDirToWiki",
+				"title": "上传目录中所有的资源文件到Wiki(UploadAssetsInDirToWiki)",
+				"category": "wiki"
+			},
+			{
 				"command": "wiki.uploadFileToWiki",
 				"title": "上传文件到Wiki(UploadFileToWiki)",
 				"category": "wiki"
@@ -103,6 +108,10 @@
 					"when": "explorerResourceIsFolder"
 				},
 				{
+					"command": "wiki.UploadAssetsInDirToWiki",
+					"when": "resourceScheme != wiki && explorerResourceIsFolder"
+				},
+				{
 					"command": "wiki.uploadFileToWiki",
 					"when": "resourceExtname == .md"
 				},
@@ -145,6 +154,10 @@
 				},
 				{
 					"command": "wiki.uploadFilesInDirToWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.UploadAssetsInDirToWiki",
 					"when": "false"
 				},
 				{

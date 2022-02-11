@@ -71,7 +71,7 @@ export async function deleteFileFromWiki(id: number) {
   return data;
 }
 
-export async function uploadAssetToWiki(filePath: string, folderId: number, parentDirName: string) {
+export async function uploadAssetToWiki(filePath: string, folderId: number, parentDirName: string, succeed:(assetUrl:string)=>void, error:()=>void) {
   console.log("wiki uploadImageToWiki filePath:" + filePath + ",folderId:" + folderId);
   if(wsutils.isWindows) {
     filePath = filePath.slice(1);
@@ -100,9 +100,10 @@ export async function uploadAssetToWiki(filePath: string, folderId: number, pare
     }).then((value: any) => {
         console.log("wiki uploadAssetToWiki success path:" + filePath);
         const assetUrl = wsutils.wikiUrl + "/" + parentDirName.toLowerCase() + "/" + filePath.split("/").pop()?.toLowerCase().replace(/ /g, "_");
-        vscode.window.showInformationMessage("资源上传成功，资源链接已经存在于您的剪切板中(Uploading resources successfully:" + filePath.split("/").pop() + ". Url added to your clipboard)");
-        vscode.env.clipboard.writeText(assetUrl);
+        succeed(assetUrl);
+        
     }, (reason: any) => {
+        error();
         console.error(reason);
         vscode.window.showErrorMessage("资源上传失败(Failed to upload a resource)" + reason.message);
     });
