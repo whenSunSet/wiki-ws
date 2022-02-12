@@ -4,6 +4,8 @@ import * as fs from "fs";
 import FormData = require("form-data");
 import * as wsutils from "./wsutils";
 import * as vscode from "vscode";
+import * as path from "path";
+import { Readable } from 'form-data';
 
 export async function queryWikiFileList(key: string) {
   const queryG = gql`query{pages{search(query:"${key}"){results{id,title,path}}}}`;
@@ -19,7 +21,7 @@ export async function queryWikiFromId(id: number) {
   return data;
 }
 
-export async function changeWikiContent(id: number, content: string, title:string) {
+export async function changeWikiContent(id: number, content: string, title: string) {
   content = wsutils.escapeRegExp(content);
   const queryG = gql`mutation{pages{update(id:${id},content:"${content}",tags:["${title}"],isPublished:true){responseResult{errorCode,succeeded,slug,message}}}}`;
   console.log("wiki changeWikiContent id:" + id);
@@ -71,9 +73,28 @@ export async function deleteFileFromWiki(id: number) {
   return data;
 }
 
-export async function uploadAssetToWiki(filePath: string, folderId: number, parentDirName: string, succeed:(assetUrl:string)=>void, error:()=>void) {
+export async function deleteAssetFromWiki(id: number) {
+  const queryG = gql`mutation{
+  assets{
+    deleteAsset(id:${id}){
+      responseResult{
+        succeeded,
+        message
+      }
+    }
+  }
+}`;
+
+  console.log("wiki deleteAssetFromWiki id:" + id);
+  const data = await wsutils.graphQLClient.request(queryG);
+  return data;
+}
+
+
+
+export async function uploadAssetToWiki(filePath: string, folderId: number, parentDirName: string, succeed: (assetUrl: string) => void, error: () => void) {
   console.log("wiki uploadImageToWiki filePath:" + filePath + ",folderId:" + folderId);
-  if(wsutils.isWindows) {
+  if (wsutils.isWindows) {
     filePath = filePath.slice(1);
   }
   const localFile = fs.createReadStream(filePath);
@@ -98,14 +119,14 @@ export async function uploadAssetToWiki(filePath: string, folderId: number, pare
       maxBodyLength: Infinity,
       headers: headers
     }).then((value: any) => {
-        console.log("wiki uploadAssetToWiki success path:" + filePath);
-        const assetUrl = wsutils.wikiUrl + "/" + parentDirName.toLowerCase() + "/" + filePath.split("/").pop()?.toLowerCase().replace(/ /g, "_");
-        succeed(assetUrl);
-        
+      console.log("wiki uploadAssetToWiki success path:" + filePath);
+      const assetUrl = wsutils.wikiUrl + "/" + parentDirName.toLowerCase() + "/" + filePath.split("/").pop()?.toLowerCase().replace(/ /g, "_");
+      succeed(assetUrl);
+
     }, (reason: any) => {
-        error();
-        console.error(reason);
-        vscode.window.showErrorMessage("资源上传失败(Failed to upload a resource)" + reason.message);
+      error();
+      console.error(reason);
+      vscode.window.showErrorMessage("资源上传失败(Failed to upload a resource)" + reason.message);
     });
   });
   // return axios.post(wsutils.imageUploadUrl, formData, { headers });
@@ -138,6 +159,41 @@ export async function getFolderIdFromName(localFolderName: string) {
   });
 }
 
+export async function getAssetFromFold(folderId: number) {
+  const queryG = gql`query{
+  assets{
+    list(folderId:${folderId}, kind:ALL){
+      id,
+      filename
+    }
+  }
+}`;
+
+  console.log("wiki getAssetFromFold folderId" + folderId);
+  const data = await wsutils.graphQLClient.request(queryG);
+  return data;
+}
+
+export async function getAssetFilenameFromFold(folderId: number) {
+  return getAssetFromFold(folderId).then((data: any) => {
+    let filenameList: Array<string> = [];
+    data.assets.list.forEach((element: { id: number; filename: string; }) => {
+      filenameList.push(element.filename);
+    });
+    return filenameList;
+  });
+}
+
+export async function getAssetIdFromFold(folderId: number) {
+  return getAssetFromFold(folderId).then((data: any) => {
+    let idList: Array<number> = [];
+    data.assets.list.forEach((element: { id: number; filename: string; }) => {
+      idList.push(element.id);
+    });
+    return idList;
+  });
+}
+
 export async function createAssetFolder(name: string) {
   const queryG = gql`mutation{
     assets{
@@ -155,4 +211,31 @@ export async function createAssetFolder(name: string) {
   console.log("wiki createAssetFolder name" + name);
   const data = await wsutils.graphQLClient.request(queryG);
   return data;
+}
+
+// url 是图片地址，如，http://wximg.233.com/attached/image/20160815/20160815162505_0878.png
+// filepath 是文件下载的本地目录
+// name 是下载后的文件名
+export async function downloadWikiFile(url: string, filepath: string, name: string) {
+	if (!fs.existsSync(filepath)) {
+		fs.mkdirSync(filepath);
+	}
+	const mypath = path.resolve(filepath, name);
+	if (fs.existsSync(mypath)) {
+		fs.unlinkSync(mypath)
+	}
+	const writer = fs.createWriteStream(mypath);
+	const response = await axios({
+		url,
+		method: "GET",
+		responseType: "stream",
+    headers: {
+      "Authorization": wsutils.authorization
+    }
+	});
+	(response.data as Readable).pipe(writer);
+	// response.data.pipe(writer);
+	return new Promise((resolve, reject) => {
+		writer.on("finish", resolve);
+	});
 }

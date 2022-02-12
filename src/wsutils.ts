@@ -32,6 +32,7 @@ export const WIKI_NEW_LINE = "\\n";
 export const UPLOADING_TIME = 1000;
 export const DELETING_TIME = 1000;
 export const FETCHING_TIME = 500;
+export const BATCH_DELETE_ASSET_LIMIT = 5;
 
 export function mkdirSettingDir(): string {
 	const settingPathDir = CACHE_DIR;
@@ -438,11 +439,14 @@ export function clearWikiDocker(callback: (error: any, stdout: string, stderr: s
 // url 是图片地址，如，http://wximg.233.com/attached/image/20160815/20160815162505_0878.png
 // filepath 是文件下载的本地目录
 // name 是下载后的文件名
-async function downloadFile(url: string, filepath: string, name: string) {
+export async function downloadFile(url: string, filepath: string, name: string) {
 	if (!fs.existsSync(filepath)) {
 		fs.mkdirSync(filepath);
 	}
 	const mypath = path.resolve(filepath, name);
+	if (fs.existsSync(mypath)) {
+		fs.unlinkSync(mypath)
+	}
 	const writer = fs.createWriteStream(mypath);
 	const response = await axios({
 		url,

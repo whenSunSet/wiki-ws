@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { File, MemFS, queryWikiFromIdInner } from "./fileSystemProvider";
 import { quickOpen, FileItem, queryWikiFileListInner } from "./quickOpen";
-import { createWikiNewFile, deleteFileFromWiki, uploadAssetToWiki, createAssetFolder, getFolderIdFromName } from "./gql";
+import { createWikiNewFile, deleteFileFromWiki, uploadAssetToWiki, createAssetFolder, getFolderIdFromName, getAssetFilenameFromFold, downloadWikiFile, getAssetFromFold, deleteAssetFromWiki } from "./gql";
 import * as wsutils from "./wsutils";
 import { multiStepInput, State } from "./multiStepInput";
 import * as constant from "./constant";
@@ -248,14 +248,18 @@ export function activate(context: vscode.ExtensionContext) {
                 finalFilePath = finalFilePath.replace(/\\/g, "/");
             }
             console.log("wiki UploadAssetsInDirToWiki walkFileSync rootDirPath:" + dirUri.path + ",filePath:" + filePath);
-            if(!filePath.endsWith(".md")) {
+            if (finalFilePath.split("/").pop()!!.indexOf(".") < 0) {
+                vscode.window.showErrorMessage("上传失败，资源名称需要有后缀名(Upload failed, resource name needs suffix): " + finalFilePath);
+                return
+            }
+            if (!filePath.endsWith(".md")) {
                 filePathList.push(filePath);
             }
         });
         const assetUrlList: Array<string> = [];
         let finalClipBoard = "";
         if (filePathList.length > 0) {
-            updateAssetToWikiRecursive(filePathList, assetUrlList, 0, ()=>{
+            updateAssetToWikiRecursive(filePathList, assetUrlList, 0, () => {
                 console.log("wiki UploadAssetsInDirToWiki assetUrlList:" + assetUrlList);
                 assetUrlList.forEach(element => {
                     finalClipBoard = finalClipBoard + "[" + element.split("/").pop() + "](" + element + ")\n";
@@ -268,6 +272,35 @@ export function activate(context: vscode.ExtensionContext) {
             console.log("wiki UploadAssetsInDirToWiki no assets");
             vscode.window.showInformationMessage("目录中无资源文件(No Assets)");
         }
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.fetchAllAssetFromWikiInDir", dirUri => {
+        console.log("wiki fetchAllAssetFromWikiInDir");
+        if (!checkConfigFile()) {
+            return;
+        }
+        const parentDirName = dirUri.path.split("/").pop()
+        getFolderIdFromName(parentDirName).then((folderId: number) => {
+            if (folderId == undefined) {
+                vscode.window.showErrorMessage("下载失败，该文件夹不存在(Download failed. The folder does not exist): " + dirUri.path);
+                return
+            }
+            getAssetFilenameFromFold(folderId).then((filenameList: Array<string>) => {
+                const assetUrlList: Array<string> = []
+                const realFilenameList: Array<string> = []
+                filenameList.forEach((filename: string) => {
+                    if (filename.indexOf(".") < 0) {
+                        vscode.window.showErrorMessage("下载失败，资源名称需要有后缀名(Download failed, resource name needs suffix): " + filename);
+                    } else {
+                        assetUrlList.push(wsutils.wikiUrl + "/" + parentDirName + "/" + filename);
+                        realFilenameList.push(filename)
+                    }
+                })
+                downloadAssetFromWikiRecursive(assetUrlList, realFilenameList, dirUri.path, 0, () => {
+                    vscode.window.showInformationMessage("所有资源下载成功(All resources have been downloaded successfully): " + dirUri.path);
+                })
+            })
+        })
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteFileFromWiki", (uri) => {
@@ -300,6 +333,74 @@ export function activate(context: vscode.ExtensionContext) {
         });
     }));
 
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteDirAssetFromWiki", (dirUri) => {
+        console.log("wiki deleteDirAssetFromWiki path:" + dirUri.path);
+        if (!checkConfigFile()) {
+            return;
+        }
+        vscode.window.showInputBox({ placeHolder: "输入yes或者no(print yes or no)", prompt: "确认删除吗？此操作不可撤销！(Are you sure to delete? This operation cannot be undone!)" }).then((value: string | undefined) => {
+            console.log("wiki deleteDirAssetFromWiki print:" + value);
+            if (value?.toLowerCase() != wsutils.yes) {
+                return;
+            }
+            const parentDirName = dirUri.path.split("/").pop()
+            getFolderIdFromName(parentDirName).then((folderId: number) => {
+                if (folderId == undefined) {
+                    vscode.window.showErrorMessage("删除失败，该文件夹不存(Download failed. The folder does not exist): " + dirUri.path);
+                    return
+                }
+                getAssetFromFold(folderId).then((data: any) => {
+                    if (data.assets.list.length >= wsutils.BATCH_DELETE_ASSET_LIMIT) {
+                        vscode.window.showInputBox({ placeHolder: "输入yes或者no(print yes or no)", prompt: "文件夹中存在超过" + wsutils.BATCH_DELETE_ASSET_LIMIT + "个文件，确认删除吗？(Please confirm the deletion again!)" }).then((value: string | undefined) => {
+                            if (value?.toLowerCase() != wsutils.yes) {
+                                return;
+                            }
+                            let indexTimeout = 0;
+                            let indexFor = 0;
+                            const sum = data.assets.list.length
+                            data.assets.list.forEach((element: { id: number; filename: string; }) => {
+                                setTimeout(() => {
+                                    deleteAssetFromWiki(element.id).then((data: any) => {
+                                        indexFor = indexFor + 1;
+                                        const responseResult = data.assets.deleteAsset.responseResult;
+                                        if (!responseResult.succeeded) {
+                                            vscode.window.showInformationMessage(indexFor + "/" + sum + "资源删除失败(Resource delete error):" + responseResult.message);
+                                        } else {
+                                            vscode.window.showInformationMessage(indexFor + "/" + sum + "资源删除成功(Resource deleted successfully):" + element.filename);
+                                        }
+                                    });
+                                }, indexTimeout * wsutils.DELETING_TIME);
+                                indexTimeout = indexTimeout + 1;
+                            });
+                        })
+                    } else {
+                        if (data.assets.list.length <= 0) {
+                            vscode.window.showInformationMessage("该文件夹中不存在文件(No files exist in this folder): " + dirUri.path);
+                            return
+                        }
+                        let indexTimeout = 0;
+                        let indexFor = 0;
+                        const sum = data.assets.list.length
+                        data.assets.list.forEach((element: { id: number; filename: string; }) => {
+                            setTimeout(() => {
+                                deleteAssetFromWiki(element.id).then((data: any) => {
+                                    indexFor = indexFor + 1;
+                                    const responseResult = data.assets.deleteAsset.responseResult;
+                                    if (!responseResult.succeeded) {
+                                        vscode.window.showInformationMessage(indexFor + "/" + sum + "资源删除失败(Resource delete error):" + responseResult.message);
+                                    } else {
+                                        vscode.window.showInformationMessage(indexFor + "/" + sum + "资源删除成功(Resource deleted successfully):" + element.filename);
+                                    }
+                                });
+                            }, indexTimeout * wsutils.DELETING_TIME);
+                            indexTimeout = indexTimeout + 1;
+                        });
+                    }
+                });
+            });
+        });
+    }));
+
     context.subscriptions.push(vscode.commands.registerCommand("wiki.enableInitWikiWhenStartVscode", (dirUri) => {
         console.log("wiki enableInitWikiWhenStartVscode");
         if (!checkConfigFile()) {
@@ -319,6 +420,10 @@ export function activate(context: vscode.ExtensionContext) {
         if (!checkConfigFile()) {
             return;
         }
+        if (uri.path.split("/").pop()!!.indexOf(".") < 0) {
+            vscode.window.showErrorMessage("上传失败，资源名称需要有后缀名(Upload failed, resource name needs suffix): " + uri.path);
+            return
+        }
         updateAssetToWiki(uri.path, (assetUrl: string) => {
             vscode.window.showInformationMessage("资源上传成功，资源链接已经存在于您的剪切板中(Uploading resources successfully:" + uri.path.split("/").pop() + ". Url added to your clipboard)");
             const finalClipBoard = "[" + assetUrl.split("/").pop() + "](" + assetUrl + ")";
@@ -327,16 +432,33 @@ export function activate(context: vscode.ExtensionContext) {
     }));
 }
 
-function updateAssetToWikiRecursive(filePathList: Array<string>, assetUrlList: Array<string>, index: number, end:()=>void) {
-    updateAssetToWiki(filePathList[index], (assetUrl: string) => {
-        vscode.window.showInformationMessage((index + 1) + "/" + filePathList.length + "资源上传成功(Uploading resources successfully:" + filePathList[index].split("/").pop());
-        assetUrlList.push(assetUrl);
-        if((index + 1) < filePathList.length) {
-            updateAssetToWikiRecursive(filePathList, assetUrlList, index + 1, end);
-        } else {
-            end();
-        }
-    }, () => { });
+function updateAssetToWikiRecursive(filePathList: Array<string>, assetUrlList: Array<string>, index: number, end: () => void) {
+    setTimeout(() => {
+        updateAssetToWiki(filePathList[index], (assetUrl: string) => {
+            vscode.window.showInformationMessage((index + 1) + "/" + filePathList.length + "资源上传成功(Uploading resources successfully:" + filePathList[index].split("/").pop());
+            assetUrlList.push(assetUrl);
+            if ((index + 1) < filePathList.length) {
+                updateAssetToWikiRecursive(filePathList, assetUrlList, index + 1, end);
+            } else {
+                end();
+            }
+        }, () => { });
+    }, index * wsutils.UPLOADING_TIME)
+}
+
+function downloadAssetFromWikiRecursive(assetUrlList: Array<string>, assetFilenameList: Array<string>, parentDir: string, index: number, end: () => void) {
+    console.log("wiki downloadAssetFromWikiRecursive assetUrlList:" + assetUrlList + ",assetFilenameList:" + assetFilenameList + ",parentDir:" + parentDir + ",index:" + index);
+    setTimeout(() => {
+        downloadWikiFile(assetUrlList[index], parentDir, assetFilenameList[index]).then((value: any) => {
+            vscode.window.showInformationMessage((index + 1) + "/" + assetUrlList.length + "资源下载成功(Resources download successfully:" + assetFilenameList[index]);
+            if ((index + 1) < assetUrlList.length) {
+                downloadAssetFromWikiRecursive(assetUrlList, assetFilenameList, parentDir, index + 1, end);
+            } else {
+                end();
+            }
+        })
+
+    }, index * wsutils.FETCHING_TIME)
 }
 
 function updateAssetToWiki(filePath: string, succeed: (assetUrl: string) => void, error: () => void) {
@@ -480,8 +602,8 @@ function initWikiCreateLocal(mainUrl: string, authorization: string, inputDocker
     console.log("mainUrl:" + mainUrl + ",authorization:" + authorization + ",inputDockerDir:" + inputDockerDir);
     wsutils.createSettingFile(mainUrl, authorization, inputDockerDir, isWindows, initWikiWhenStartVscode);
     wsutils.createCacheFile(wsutils.openSearchWhenInit);
-    const hasRealWorkspace = (vscode.workspace.workspaceFolders != undefined &&vscode.workspace.workspaceFolders?.length != 0);
-    if(!hasRealWorkspace) {
+    const hasRealWorkspace = (vscode.workspace.workspaceFolders != undefined && vscode.workspace.workspaceFolders?.length != 0);
+    if (!hasRealWorkspace) {
         wsutils.mkdirTempDir();
         vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" }, { uri: vscode.Uri.parse(wsutils.TEMP_DIR), name: "wiki-local" });
     } else {

@@ -55,3 +55,14 @@
   - English：
     - 1.Added the function of uploading all resource files in a directory 
     - 2.During wiki initialization, if there is no local workspace, the temp directory is automatically created in ~/. Wiki-ws so that users can store temporary files in it.
+- 2022.02.13
+  - 中文：
+    - 1.新增下载某文件夹中的所有资源文件的功能。
+    - 2.新增删除某文件夹中的所有资源文件的功能。
+    - 3.优化了所有功能的文案描述。
+    - 4.优化了资源批量上传的功能。
+  - 英文：
+    - 1.Add the function of downloading all resource files in a folder.
+    - 2.Added the function of deleting all resource files in a folder.
+    - 3.Optimized copywriting description of all functions.
+    - 4.Optimize the function of batch upload of resources.

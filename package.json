@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.2.9",
+	"version": "1.3.0",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -23,72 +23,82 @@
 		"commands": [
 			{
 				"command": "wiki.uploadAssetToWiki",
-				"title": "上传资源文件到Wiki(UploadAssetToWiki)",
-				"category": "wiki"
-			},
-			{
-				"command": "wiki.deleteFileFromWiki",
-				"title": "从Wiki删除该文件(DeleteFileFromWiki)",
-				"category": "wiki"
-			},
-			{
-				"command": "wiki.deleteDirFileFromWiki",
-				"title": "从Wiki删除该目录下的所有MD文件(DeleteDirFileFromWiki)",
-				"category": "wiki"
-			},
-			{
-				"command": "wiki.uploadFilesInDirToWiki",
-				"title": "上传目录中所有的MD文件到Wiki(UploadFilesInDirToWiki)",
+				"title": "Wiki:上传资源(UploadAsset)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.UploadAssetsInDirToWiki",
-				"title": "上传目录中所有的资源文件到Wiki(UploadAssetsInDirToWiki)",
+				"title": "Wiki:上传所有资源(UploadAllAssets)",
+				"category": "wiki"
+			},
+			{
+				"command": "wiki.deleteDirAssetFromWiki",
+				"title": "Wiki:删除目录下所有资源(DeleteAllAssetsInDir)",
+				"category": "wiki"
+			},
+			{
+				"command": "wiki.fetchAllAssetFromWikiInDir",
+				"title": "Wiki:加载目录下所有资源(LoadAllAssetsInDir)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.uploadFileToWiki",
-				"title": "上传文件到Wiki(UploadFileToWiki)",
+				"title": "Wiki:上传文件(UploadFile)",
 				"category": "wiki"
 			},
 			{
-				"command": "wiki.initWiki",
-				"title": "初始化Wiki(InitWiki)",
+				"command": "wiki.uploadFilesInDirToWiki",
+				"title": "Wiki:上传所有文件(UploadAllFiles)",
 				"category": "wiki"
 			},
 			{
-				"command": "wiki.initWikiWindows",
-				"title": "初始化Wiki(InitWikiWindows)",
+				"command": "wiki.deleteFileFromWiki",
+				"title": "Wiki:删除文件(DeleteFile)",
+				"category": "wiki"
+			},
+			{
+				"command": "wiki.deleteDirFileFromWiki",
+				"title": "Wiki:删除目录下所有文件(DeleteAllFiles)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.searchInWiki",
-				"title": "在Wiki中搜索文件(SearchInWiki)",
+				"title": "Wiki:搜索文件(SearchFile)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.fetchAllFileFromWikiInDir",
-				"title": "从Wiki中加载当前目录下所有文件(FetchAllFileFromWikiInDir)",
+				"title": "Wiki:加载目录下所有文件(LoadAllFileInDir)",
+				"category": "wiki"
+			},
+			{
+				"command": "wiki.initWiki",
+				"title": "Wiki:初始化(Init)",
+				"category": "wiki"
+			},
+			{
+				"command": "wiki.initWikiWindows",
+				"title": "Wiki:初始化(Init)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.fileStatus",
-				"title": "当前文件的状态(FileStatus)",
+				"title": "Wiki:文件状态(FileStatus)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.openInWikiJS",
-				"title": "在Wiki.js中打开(OpenInWikiJS)",
+				"title": "Wiki:在浏览器里打开(OpenInBrowser)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.enableInitWikiWhenStartVscode",
-				"title": "是否启动vscode时就启动wiki(EnableInitWikiWhenStartVscode)",
+				"title": "Wiki:是否VSCode启动时初始化(EnableInitWikiWhenStartVscode)",
 				"category": "wiki"
 			},
 			{
 				"command": "wiki.clearWiki",
-				"title": "清理Wiki(ClearWiki)",
+				"title": "Wiki:删除所有数据(DeleteAllData)",
 				"category": "wiki"
 			}
 		],
@@ -97,19 +107,32 @@
 				{
 					"command": "wiki.fileStatus",
 					"when": "resourceScheme == wiki"
-				},{
+				},
+				{
 					"command": "wiki.openInWikiJS",
 					"when": "resourceScheme == wiki"
 				}
 			],
 			"explorer/context": [
 				{
-					"command": "wiki.uploadFilesInDirToWiki",
-					"when": "explorerResourceIsFolder"
+					"command": "wiki.uploadAssetToWiki",
+					"when": "resourceExtname != .md && resourceScheme != wiki && !explorerResourceIsFolder"
 				},
 				{
 					"command": "wiki.UploadAssetsInDirToWiki",
 					"when": "resourceScheme != wiki && explorerResourceIsFolder"
+				},
+				{
+					"command": "wiki.deleteDirAssetFromWiki",
+					"when": "explorerResourceIsFolder && resourceScheme != wiki"
+				},
+				{
+					"command": "wiki.fetchAllAssetFromWikiInDir",
+					"when": "explorerResourceIsFolder && resourceScheme != wiki"
+				},
+				{
+					"command": "wiki.uploadFilesInDirToWiki",
+					"when": "explorerResourceIsFolder"
 				},
 				{
 					"command": "wiki.uploadFileToWiki",
@@ -126,13 +149,45 @@
 				{
 					"command": "wiki.fetchAllFileFromWikiInDir",
 					"when": "explorerResourceIsFolder && resourceScheme == wiki"
-				},
-				{
-					"command": "wiki.uploadAssetToWiki",
-					"when": "resourceExtname != .md && resourceScheme != wiki && !explorerResourceIsFolder"
 				}
 			],
 			"commandPalette": [
+				{
+					"command": "wiki.uploadAssetToWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.UploadAssetsInDirToWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.deleteDirAssetFromWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.fetchAllAssetFromWikiInDir",
+					"when": "false"
+				},
+				{
+					"command": "wiki.uploadFileToWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.uploadFilesInDirToWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.deleteFileFromWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.deleteDirFileFromWiki",
+					"when": "false"
+				},
+				{
+					"command": "wiki.fetchAllFileFromWikiInDir",
+					"when": "false"
+				},
 				{
 					"command": "wiki.searchInWiki",
 					"when": "true"
@@ -151,34 +206,6 @@
 				{
 					"command": "wiki.enableInitWikiWhenStartVscode",
 					"when": "workbenchState == workspace"
-				},
-				{
-					"command": "wiki.uploadFilesInDirToWiki",
-					"when": "false"
-				},
-				{
-					"command": "wiki.UploadAssetsInDirToWiki",
-					"when": "false"
-				},
-				{
-					"command": "wiki.uploadFileToWiki",
-					"when": "false"
-				},
-				{
-					"command": "wiki.deleteFileFromWiki",
-					"when": "false"
-				},
-				{
-					"command": "wiki.deleteDirFileFromWiki",
-					"when": "false"
-				},
-				{
-					"command": "wiki.fetchAllFileFromWikiInDir",
-					"when": "false"
-				},
-				{
-					"command": "wiki.uploadAssetToWiki",
-					"when": "false"
 				},
 				{
 					"command": "wiki.fileStatus",
