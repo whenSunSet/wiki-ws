@@ -12,6 +12,7 @@ import * as constant from "./constant";
 import { GraphQLClient } from "graphql-request";
 import * as StreamZip from "node-stream-zip";
 import { Readable } from 'form-data';
+import * as qs from 'querystring';
 
 export const CACHE_DIR = os.homedir() + "/.Wiki-WS";
 export const TEMP_DIR = CACHE_DIR + "/temp";
@@ -449,7 +450,7 @@ export async function downloadFile(url: string, filepath: string, name: string) 
 	}
 	const writer = fs.createWriteStream(mypath);
 	const response = await axios({
-		url,
+		url:encodeURI(url),
 		method: "GET",
 		responseType: "stream",
 	});

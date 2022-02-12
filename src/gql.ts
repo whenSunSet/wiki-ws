@@ -6,6 +6,7 @@ import * as wsutils from "./wsutils";
 import * as vscode from "vscode";
 import * as path from "path";
 import { Readable } from 'form-data';
+import * as qs from 'querystring';
 
 export async function queryWikiFileList(key: string) {
   const queryG = gql`query{pages{search(query:"${key}"){results{id,title,path}}}}`;
@@ -224,9 +225,10 @@ export async function downloadWikiFile(url: string, filepath: string, name: stri
 	if (fs.existsSync(mypath)) {
 		fs.unlinkSync(mypath)
 	}
+  
 	const writer = fs.createWriteStream(mypath);
 	const response = await axios({
-		url,
+		url:encodeURI(url),
 		method: "GET",
 		responseType: "stream",
     headers: {

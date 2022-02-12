@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.3.0",
+	"version": "1.3.1",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
