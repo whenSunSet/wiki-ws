@@ -69,3 +69,10 @@
 - 2022.02.13: 1.3.1
   - 中文：修复 url 包含中文时下载失败的问题。
   - English：Fix the problem of download failure when the URL contains Chinese.
+- 2022.02.13: 1.3.2
+  - 中文：
+    - 1.新增通过链接下载单个资源文件的功能。
+    - 2.新增文件删除单个资源的功能。
+  - English：
+    - 1.Added the function of downloading a single resource file through a link.
+    - 2.Add the function of deleting a single resource from a file.

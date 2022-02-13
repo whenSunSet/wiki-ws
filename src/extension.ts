@@ -333,6 +333,45 @@ export function activate(context: vscode.ExtensionContext) {
         });
     }));
 
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteAssetFromWiki", (dirUri) => {
+        console.log("wiki deleteAssetFromWiki path:" + dirUri.path);
+        if (!checkConfigFile()) {
+            return;
+        }
+        const result = dirUri.path.split("/");
+        let parentDirName = ""
+        if (result.length <= 1) {
+            return
+        }
+        parentDirName = result[result.length - 2];
+        const deleteFilename = result[result.length - 1];
+        console.log("wiki deleteAssetFromWiki parentDirName:" + parentDirName + ",deleteFilename:" + deleteFilename);
+        getFolderIdFromName(parentDirName).then((folderId: number) => {
+            if (folderId == undefined) {
+                vscode.window.showErrorMessage("删除失败，该文件的文件夹不存在(Failed to delete the file that does not exist): " + parentDirName);
+                return
+            }
+            getAssetFromFold(folderId).then((data: any) => {
+                if (data.assets.list.length <= 0) {
+                    vscode.window.showInformationMessage("该文件夹中不存在文件(No files exist in this folder): " + parentDirName);
+                    return
+                }
+                data.assets.list.forEach((element: { id: number; filename: string; }) => {
+                    if (deleteFilename == element.filename) {
+                        deleteAssetFromWiki(element.id).then((data: any) => {
+                            const responseResult = data.assets.deleteAsset.responseResult;
+                            if (!responseResult.succeeded) {
+                                vscode.window.showInformationMessage("资源删除失败(Resource delete error):" + responseResult.message);
+                            } else {
+                                vscode.window.showInformationMessage("资源删除成功(Resource deleted successfully):" + element.filename);
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    }));
+
     context.subscriptions.push(vscode.commands.registerCommand("wiki.deleteDirAssetFromWiki", (dirUri) => {
         console.log("wiki deleteDirAssetFromWiki path:" + dirUri.path);
         if (!checkConfigFile()) {
@@ -412,6 +451,41 @@ export function activate(context: vscode.ExtensionContext) {
                 return;
             }
             wsutils.createSettingFile(wsutils.wikiUrl, wsutils.authorization.replace("Bearer ", ""), wsutils.inputDockerDir, wsutils.isWindows, true);
+        });
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand("wiki.fetchAssetFromWiki", (dirUri) => {
+        console.log("wiki fetchAssetFromWiki");
+        if (!checkConfigFile()) {
+            return;
+        }
+        if (!wsutils.hasWikiWorkspace()) {
+            initWiki(initWikiStatusBarItem, undefined);
+            return;
+        }
+        vscode.window.showInputBox({ placeHolder: "输入资源链接(print resource link)", prompt: "" }).then((value: string | undefined) => {
+            const localDirPath = vscode.workspace.workspaceFolders?.pop()?.uri.path;
+            console.log("wiki fetchAssetFromWiki print:" + value + ",localDirPath:" + localDirPath);
+            if (localDirPath == undefined) {
+                return;
+            }
+            const assetUrl = value!!;
+            const result = assetUrl.split("/");
+            let parentDir = localDirPath;
+            console.log("wiki fetchAssetFromWiki result:" + result + ",assetUrl:" + assetUrl);
+            if (result.length == 4) {
+                parentDir = localDirPath + "/root";
+            } else if (result.length > 4) {
+                parentDir = localDirPath + "/" + result[result.length - 2];
+            } else {
+                return
+            }
+            if (!fs.existsSync(parentDir)) {
+                fs.mkdirSync(parentDir)
+            }
+            downloadWikiFile(assetUrl, parentDir, result[result.length - 1]).then((value: any) => {
+                vscode.window.showInformationMessage("资源下载成功(Resources download successfully:" + assetUrl);
+            })
         });
     }));
 

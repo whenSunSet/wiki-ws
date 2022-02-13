@@ -2,7 +2,7 @@
 	"name": "Wiki-ws",
 	"displayName": "Wiki-ws",
 	"description": "You can curd you blog from Wiki.js use this extension.",
-	"version": "1.3.1",
+	"version": "1.3.2",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
@@ -32,6 +32,11 @@
 				"category": "wiki"
 			},
 			{
+				"command": "wiki.deleteAssetFromWiki",
+				"title": "Wiki:删除资源(DeleteAsset)",
+				"category": "wiki"
+			},
+			{
 				"command": "wiki.deleteDirAssetFromWiki",
 				"title": "Wiki:删除目录下所有资源(DeleteAllAssetsInDir)",
 				"category": "wiki"
@@ -39,6 +44,11 @@
 			{
 				"command": "wiki.fetchAllAssetFromWikiInDir",
 				"title": "Wiki:加载目录下所有资源(LoadAllAssetsInDir)",
+				"category": "wiki"
+			},
+			{
+				"command": "wiki.fetchAssetFromWiki",
+				"title": "Wiki:下载资源(LoadAsset)",
 				"category": "wiki"
 			},
 			{
@@ -123,6 +133,10 @@
 					"when": "resourceScheme != wiki && explorerResourceIsFolder"
 				},
 				{
+					"command": "wiki.deleteAssetFromWiki",
+					"when": "resourceExtname != .md && resourceScheme != wiki && !explorerResourceIsFolder"
+				},
+				{
 					"command": "wiki.deleteDirAssetFromWiki",
 					"when": "explorerResourceIsFolder && resourceScheme != wiki"
 				},
@@ -161,12 +175,20 @@
 					"when": "false"
 				},
 				{
+					"command": "wiki.deleteAssetFromWiki",
+					"when": "false"
+				},
+				{
 					"command": "wiki.deleteDirAssetFromWiki",
 					"when": "false"
 				},
 				{
 					"command": "wiki.fetchAllAssetFromWikiInDir",
 					"when": "false"
+				},
+				{
+					"command": "wiki.fetchAssetFromWiki",
+					"when": "true"
 				},
 				{
 					"command": "wiki.uploadFileToWiki",
