@@ -34,7 +34,11 @@ export const FETCHING_TIME = 500;
 export const BATCH_DELETE_ASSET_LIMIT = 5;
 
 export function getTempDir(): string {
-	return getCacheDir() + "/temp";
+	if (isWindows) {
+		return os.homedir + "/Downloads";
+	} else {
+		return getCacheDir() + "/temp";
+	}
 }
 
 export function getCacheDir(): string {
