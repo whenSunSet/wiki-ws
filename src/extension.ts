@@ -125,13 +125,13 @@ export function activate(context: vscode.ExtensionContext) {
             }
             fs.unlinkSync(wsutils.getSettingFilePath());
             fs.unlinkSync(wsutils.getCacheFilePath());
-            vscode.window.showInformationMessage("配置文件清理完毕(Setting file cleared)!");
+            vscode.window.showInformationMessage("1/3配置文件清理完毕(Setting file cleared)!");
             if (wsutils.inputDockerDir != "" && wsutils.inputDockerDir != undefined) {
-                wsutils.moveWikiInitDataDirToOld(wsutils.inputDockerDir);
-                wsutils.deleteWikiInitDataZip(wsutils.inputDockerDir);
                 wsutils.clearWikiDocker((error, stdout, stderr) => {
-                    vscode.window.showInformationMessage("Wiki程序清理完毕(Wiki program has been cleaned up)!");
+                    vscode.window.showInformationMessage("2/3Wiki程序清理完毕(Wiki program has been cleaned up)!");
                     vscode.workspace.updateWorkspaceFolders(0, 1);
+                    wsutils.moveWikiInitDataDirToOld(wsutils.inputDockerDir);
+                    wsutils.deleteWikiInitDataZip(wsutils.inputDockerDir);
                 });
             }
         });
