@@ -284,10 +284,6 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         let parentDirName = dirUri.path.split("/").pop()
-        if (wsutils.isWindows) {
-            parentDirName = parentDirName.slice(1);
-            console.log("wiki fetchAllAssetFromWikiInDir isWindows parentDirName:" + parentDirName);
-        }
         getFolderIdFromName(parentDirName).then((folderId: number) => {
             if (folderId == undefined) {
                 vscode.window.showErrorMessage("下载失败，该文件夹不存在(Download failed. The folder does not exist): " + dirUri.path);
@@ -304,7 +300,12 @@ export function activate(context: vscode.ExtensionContext) {
                         realFilenameList.push(filename)
                     }
                 })
-                downloadAssetFromWikiRecursive(assetUrlList, realFilenameList, dirUri.path, 0, () => {
+                let file = dirUri.path
+                if (wsutils.isWindows) {
+                    file = file.slice(1);
+                    console.log("wiki fetchAllAssetFromWikiInDir isWindows file:" + file);
+                }
+                downloadAssetFromWikiRecursive(assetUrlList, realFilenameList, file, 0, () => {
                     vscode.window.showInformationMessage("所有资源下载成功(All resources have been downloaded successfully): " + dirUri.path);
                 })
             })
@@ -696,7 +697,7 @@ function initWikiCreateLocal(mainUrl: string, authorization: string, inputDocker
     const hasRealWorkspace = (vscode.workspace.workspaceFolders != undefined && vscode.workspace.workspaceFolders?.length != 0);
     if (!hasRealWorkspace) {
         wsutils.mkdirTempDir();
-        vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" }, { uri: vscode.Uri.parse(wsutils.getCacheDir()), name: "wiki-local" });
+        vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" }, { uri: vscode.Uri.file(wsutils.getTempDir()), name: "wiki-local" });
     } else {
         vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
     }
