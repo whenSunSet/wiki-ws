@@ -14,8 +14,6 @@ import * as StreamZip from "node-stream-zip";
 import { Readable } from 'form-data';
 import * as qs from 'querystring';
 
-export const CACHE_DIR = os.homedir() + "/.Wiki-WS";
-export const TEMP_DIR = CACHE_DIR + "/temp";
 export const DEFAULT_WIKI_MAIN_URL = "http://localhost:3344";
 export const DEFAULT_WIKI_AUTHORIZATION = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcGkiOjEsImdycCI6MSwiaWF0IjoxNjM0Mjc4OTEwLCJleHAiOjE2NjU4MzY1MTAsImF1ZCI6InVybjp3aWtpLmpzIiwiaXNzIjoidXJuOndpa2kuanMifQ.Al1rfg-mtQBsWGqdSaMkCFvUDDQOrMUbZlDSRQOLHv97UYu2Fur3-4fEbv32IyMiQUKGK38tYwc5S6a7jyaZNt0DXU43QGYAsGBRfGdTdxWRXd7hcuOQ7WTTzSvI1E3oLpdTmC7rHPJ3b0Jpiqp8FqJVJsqmiMvOcCXKDCmFll3dt0sduqAEeQk9DTgH7epO_XO3FEUXled56SbDZJKlcTMDI_w-tANq5dvT7QIjdyMMS0Kfh_sSN3mlYKwxyUUwFJevzjkJcrgbJUBdqN6j90MDNNR8FWF9NK_fC1Fxsgybc4uzrpSaNsfbcp0H48GhZrKIYJ3F4bCuVmKsbGw03g";
 export const WIKI_DATA_ZIP_URL = "http://101.42.99.194:5555/wiki-data-1.zip";
@@ -35,8 +33,18 @@ export const DELETING_TIME = 1000;
 export const FETCHING_TIME = 500;
 export const BATCH_DELETE_ASSET_LIMIT = 5;
 
+export function getTempDir(): string {
+	return getCacheDir + "/temp";
+}
+
+export function getCacheDir(): string {
+	const cacheDir = os.homedir() + "/.Wiki-WS";
+	console.log("cacheDir:" + cacheDir)
+	return cacheDir;
+}
+
 export function mkdirSettingDir(): string {
-	const settingPathDir = CACHE_DIR;
+	const settingPathDir = getCacheDir();
 	if (!fs.existsSync(settingPathDir)) {
 		fs.mkdirSync(settingPathDir);
 	}
@@ -44,7 +52,7 @@ export function mkdirSettingDir(): string {
 }
 
 export function mkdirTempDir(): string {
-	const tempDir = TEMP_DIR;
+	const tempDir = getTempDir();
 	if (!fs.existsSync(tempDir)) {
 		fs.mkdirSync(tempDir);
 	}

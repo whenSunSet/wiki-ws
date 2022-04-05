@@ -190,6 +190,7 @@ export function activate(context: vscode.ExtensionContext) {
         let finalFilePath = fileUri.path;
         if (wsutils.isWindows) {
             finalFilePath = finalFilePath.slice(1);
+            console.log("wiki uploadFileToWiki isWindows finalFilePath:" + finalFilePath);
         }
         uploadWikiNewFile(fileUri, fileUri.path, wikiFs);
     }));
@@ -215,6 +216,7 @@ export function activate(context: vscode.ExtensionContext) {
             let finalDirFilePath = dirUri.path;
             if (wsutils.isWindows) {
                 finalDirFilePath = finalDirFilePath.slice(1);
+                console.log("wiki uploadFilesInDirToWiki isWindows finalDirFilePath:" + finalDirFilePath);
             }
             let index = 0;
             wsutils.walkFileSync(finalDirFilePath, (filePath: string) => {
@@ -222,6 +224,7 @@ export function activate(context: vscode.ExtensionContext) {
                 let finalFilePath = filePath;
                 if (wsutils.isWindows) {
                     finalFilePath = finalFilePath.replace(/\\/g, "/");
+                    console.log("wiki uploadFilesInDirToWiki isWindows finalFilePath:" + finalFilePath);
                 }
                 setTimeout(() => {
                     vscode.window.showInformationMessage("文件上传中(Uploading):" + filePath);
@@ -240,6 +243,7 @@ export function activate(context: vscode.ExtensionContext) {
         let finalDirFilePath = dirUri.path;
         if (wsutils.isWindows) {
             finalDirFilePath = finalDirFilePath.slice(1);
+            console.log("wiki UploadAssetsInDirToWiki isWindows finalDirFilePath:" + finalDirFilePath);
         }
         const filePathList: Array<string> = [];
         wsutils.walkFileSync(finalDirFilePath, (filePath: string) => {
@@ -279,7 +283,11 @@ export function activate(context: vscode.ExtensionContext) {
         if (!checkConfigFile()) {
             return;
         }
-        const parentDirName = dirUri.path.split("/").pop()
+        let parentDirName = dirUri.path.split("/").pop()
+        if (wsutils.isWindows) {
+            parentDirName = parentDirName.slice(1);
+            console.log("wiki fetchAllAssetFromWikiInDir isWindows parentDirName:" + parentDirName);
+        }
         getFolderIdFromName(parentDirName).then((folderId: number) => {
             if (folderId == undefined) {
                 vscode.window.showErrorMessage("下载失败，该文件夹不存在(Download failed. The folder does not exist): " + dirUri.path);
@@ -464,10 +472,14 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
         vscode.window.showInputBox({ placeHolder: "输入资源链接(print resource link)", prompt: "" }).then((value: string | undefined) => {
-            const localDirPath = vscode.workspace.workspaceFolders?.pop()?.uri.path;
+            let localDirPath = vscode.workspace.workspaceFolders?.pop()?.uri.path;
             console.log("wiki fetchAssetFromWiki print:" + value + ",localDirPath:" + localDirPath);
             if (localDirPath == undefined) {
                 return;
+            }
+            if (wsutils.isWindows) {
+                localDirPath = localDirPath.slice(1);
+                console.log("wiki fetchAssetFromWiki isWindows localDirPath:" + localDirPath);
             }
             const assetUrl = value!!;
             const result = assetUrl.split("/");
@@ -498,7 +510,12 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showErrorMessage("上传失败，资源名称需要有后缀名(Upload failed, resource name needs suffix): " + uri.path);
             return
         }
-        updateAssetToWiki(uri.path, (assetUrl: string) => {
+        let path = uri.path 
+        if (wsutils.isWindows) {
+            path = path.slice(1);
+            console.log("wiki uploadAssetToWiki isWindows path:" + path);
+        }
+        updateAssetToWiki(path, (assetUrl: string) => {
             vscode.window.showInformationMessage("资源上传成功，资源链接已经存在于您的剪切板中(Uploading resources successfully:" + uri.path.split("/").pop() + ". Url added to your clipboard)");
             const finalClipBoard = "[" + assetUrl.split("/").pop() + "](" + assetUrl + ")";
             vscode.env.clipboard.writeText(finalClipBoard);
@@ -679,7 +696,7 @@ function initWikiCreateLocal(mainUrl: string, authorization: string, inputDocker
     const hasRealWorkspace = (vscode.workspace.workspaceFolders != undefined && vscode.workspace.workspaceFolders?.length != 0);
     if (!hasRealWorkspace) {
         wsutils.mkdirTempDir();
-        vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" }, { uri: vscode.Uri.parse(wsutils.TEMP_DIR), name: "wiki-local" });
+        vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" }, { uri: vscode.Uri.parse(wsutils.getCacheDir()), name: "wiki-local" });
     } else {
         vscode.workspace.updateWorkspaceFolders(0, 0, { uri: vscode.Uri.parse("wiki:/"), name: "wiki" });
     }
