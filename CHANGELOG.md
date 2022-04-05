@@ -76,3 +76,6 @@
   - English：
     - 1.Added the function of downloading a single resource file through a link.
     - 2.Add the function of deleting a single resource from a file.
+- 2022.04.05: 1.3.4
+  - 中文：兼容 Windows
+  - English：Compatible with windows

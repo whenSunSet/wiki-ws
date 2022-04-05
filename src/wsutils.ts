@@ -34,7 +34,7 @@ export const FETCHING_TIME = 500;
 export const BATCH_DELETE_ASSET_LIMIT = 5;
 
 export function getTempDir(): string {
-	return getCacheDir + "/temp";
+	return getCacheDir() + "/temp";
 }
 
 export function getCacheDir(): string {
