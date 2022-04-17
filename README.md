@@ -1,5 +1,4 @@
-
-[![version](https://img.shields.io/vscode-marketplace/v/WhenSunset.Wiki-ws.svg?style=flat-square&label=vscode%20marketplace)](https://marketplace.visualstudio.com/items?itemName=WhenSunset.Wiki-ws) [![installs](https://img.shields.io/vscode-marketplace/d/WhenSunset.Wiki-ws.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=WhenSunset.Wiki-ws) [![GitHub stars](https://img.shields.io/github/stars/PicGo/vs-picgo.svg?style=flat-square&label=github%20stars)](https://github.com/PicGo/vs-picgo)
+[![version](https://img.shields.io/vscode-marketplace/v/WhenSunset.Wiki-ws.svg?style=flat-square&label=vscode%20marketplace)](https://marketplace.visualstudio.com/items?itemName=WhenSunset.Wiki-ws) [![installs](https://img.shields.io/vscode-marketplace/d/WhenSunset.Wiki-ws.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=WhenSunset.Wiki-ws) [![GitHub stars](https://img.shields.io/github/stars/whenSunSet/wiki-ws.svg?style=flat-square&label=github%20stars)](https://github.com/whenSunSet/wiki-ws)
 
 ## 一、介绍
 
