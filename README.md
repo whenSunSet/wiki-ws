@@ -1,5 +1,7 @@
 [![version](https://img.shields.io/vscode-marketplace/v/WhenSunset.Wiki-ws.svg?style=flat-square&label=vscode%20marketplace)](https://marketplace.visualstudio.com/items?itemName=WhenSunset.Wiki-ws) [![installs](https://img.shields.io/vscode-marketplace/d/WhenSunset.Wiki-ws.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=WhenSunset.Wiki-ws) [![GitHub stars](https://img.shields.io/github/stars/whenSunSet/wiki-ws.svg?style=flat-square&label=github%20stars)](https://github.com/whenSunSet/wiki-ws)
 
+[English](https://github.com/whenSunSet/wiki-ws/blob/master/README-English.md)
+
 ## 一、介绍
 
 Wiki-WS 是一款旨在帮助用户快速构建“个人知识库”的 VSCode 插件。通过 Wiki-WS 您可以一键部署 Wiki.js(一个开源知识库网站)。可以让 VSCode 作为 Wiki.js 的编辑器，让我们的知识库享受到 VSCode 的插件生态，提升操作“个人知识库“的效率。 
