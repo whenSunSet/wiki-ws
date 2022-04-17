@@ -79,3 +79,6 @@
 - 2022.04.05: 1.3.7
   - 中文：兼容 Windows
   - English：Compatible with windows
+- 2022.04.18: 1.3.8
+  - 中文：修改插件信息
+  - English：update plugin info
