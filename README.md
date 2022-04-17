@@ -1,3 +1,4 @@
+
 [![version](https://img.shields.io/vscode-marketplace/v/WhenSunset.Wiki-ws.svg?style=flat-square&label=vscode%20marketplace)](https://marketplace.visualstudio.com/items?itemName=WhenSunset.Wiki-ws) [![installs](https://img.shields.io/vscode-marketplace/d/WhenSunset.Wiki-ws.svg?style=flat-square)](https://marketplace.visualstudio.com/items?itemName=WhenSunset.Wiki-ws) [![GitHub stars](https://img.shields.io/github/stars/PicGo/vs-picgo.svg?style=flat-square&label=github%20stars)](https://github.com/PicGo/vs-picgo)
 
 ## 一、介绍
@@ -22,20 +23,20 @@ Wiki-WS 是一款旨在帮助用户快速构建“个人知识库”的 VSCode �
 - 因为自动部署功能依赖 Docker，所以请确认您的机器上安装了 Docker 且处于运行状态，同时还需要确保您的网络正常，因为 Docker 镜像的拉取需要使用网络。
 
 #### (2).Wiki.js自动部署后查看
-![wiki自动部署后查看](https://cdn.jsdelivr.net/gh/whenSunSet/image-lib/wiki自动部署后查看.gif)
+![wiki自动部署后查看](https://github.com/whenSunSet/image-lib/blob/master/wiki自动部署后查看.gif?raw=true)
 - 如果您通过自动部署功能，成功部署了 Wiki.js。那么您需要点击[这里](http://wiki.heshixi.com/zh/Wiki-ws插件/重要提示)，阅读一些重要的提示
 
 #### (3).从知识库中获取文件
-![wiki文件获取](https://cdn.jsdelivr.net/gh/whenSunSet/image-lib/wiki文件获取.gif)
+![wiki文件获取](https://github.com/whenSunSet/image-lib/blob/master/wiki文件获取.gif?raw=true)
 - 如果您已经将 Wiki-WS 插件初始化完毕了，那么您可以通过搜索和批量拉取的方式获取知识库中的文件
 
 #### (4).在 VSCode 中查看知识库的文件
-![wiki文件查看](https://cdn.jsdelivr.net/gh/whenSunSet/image-lib/wiki文件查看.gif)
+![wiki文件查看](https://github.com/whenSunSet/image-lib/blob/master/wiki文件查看.gif?raw=true)
 - 您可以在 VSCode 中查看知识库的文件，因为文件是 Markdown 格式的，所以您可以在 VSCode 中安装 Markdown 插件以获得更好的预览和编辑体验。
 - 因为知识库是一个网站，所以您还可以在浏览器中访问这个文件。
 
 #### (5).在 VSCode 中修改知识库的文件
-![wiki文件修改](https://cdn.jsdelivr.net/gh/whenSunSet/image-lib/wiki文件修改.gif)
+![wiki文件修改](https://github.com/whenSunSet/image-lib/blob/master/wiki文件修改.gif?raw=true)
 - 您在拉取了知识库文件之后，可以在 VSCode 中对该文件进行编辑。
 - 文件的改动会周期性的同步到知识库中。
 - 同时 VSCode 的底部有当前文件的状态，您可以通过观察状态来确认文件是否已经保存到了知识库中。
@@ -70,7 +71,7 @@ Wiki-WS 是一款旨在帮助用户快速构建“个人知识库”的 VSCode �
 - **删除操作是不可逆的，请谨慎操作。**
 
 #### (11).清理自动部署的 Wiki.js
-![wiki自动部署后删除](https://cdn.jsdelivr.net/gh/whenSunSet/image-lib/wiki自动部署后删除.gif)
+![wiki自动部署后删除](https://github.com/whenSunSet/image-lib/blob/master/wiki自动部署后删除.gif?raw=true)
 - 如果您不想在当前计算机上部署 Wiki.js 了，那么可以使用清理功能。
 - 注意清理之后，Wiki.js 的数据文件夹不会被彻底删除，而是会被重命名。但是 Wiki.js 的程序会被杀死。
 - 重命名后的 Wiki.js 数据文件夹，可以迁移到其他计算机上，重新部署。 
