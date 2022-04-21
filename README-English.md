@@ -15,9 +15,13 @@ Before using Wiki-WS you need to confirm the following things:
 
 ### 2.Operation guide
 
+#### (0).Wiki.js manual deployment
+[Click here for manual deployment of Wiki.js](https://github.com/whenSunSet/wiki-js-deploy)
+
 #### (1).Wiki.js automatic deployment
 ![wiki自动部署](https://github.com/whenSunSet/image-lib/blob/master/wiki自动部署.gif?raw=true)
 
+- **If automatic deployment fails, manual deployment can be performed**
 - If you don't deploy Wiki.js yourself, you can use the auto-deployment feature in Wiki-WS to deploy Wiki.js to your local machine.
 - Because the automatic deployment function relies on Docker, please make sure that Docker is installed and running on your machine, and you also need to make sure that your network is normal, because the pulling of Docker images requires the use of the network.
 

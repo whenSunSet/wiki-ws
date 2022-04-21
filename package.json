@@ -2,7 +2,7 @@
 	"name": "Wiki-WS",
 	"displayName": "Wiki-WS",
 	"description": "Wiki-WS is a VSCode plugin designed to help users quickly build a 'personal knowledge base'",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"publisher": "WhenSunset",
 	"icon": "resources/icon.png",
 	"repository": {
