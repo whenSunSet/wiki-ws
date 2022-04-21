@@ -21,7 +21,7 @@ Wiki-WS 是一款旨在帮助用户快速构建“个人知识库”的 VSCode �
 [点击这里进行Wiki.js手动部署](https://github.com/whenSunSet/wiki-js-deploy)
 
 #### (1).Wiki.js自动部署
-![wiki自动部署.gif](http://wiki.heshixi.loc/5jjg-个人知识库/wiki自动部署.gif)
+![wiki自动部署](https://github.com/whenSunSet/image-lib/blob/master/wiki自动部署.gif?raw=true)
 
 - **如果自动部署失败了，那么可以进行手动部署**
 - 如果您没有自己部署 Wiki.js 的话，可以使用 Wiki-WS 中的自动部署功能，将 Wiki.js 部署到本机。
